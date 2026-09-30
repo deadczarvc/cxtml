@@ -1,0 +1,26 @@
+[open]task id="card real-27"[sep]
+[open]routing[sep]
+{"escalations": 0, "failure": "none", "localized": false, "mechanical": false, "previous_tier": null, "contract": "clear", "scope": "cross_system", "phase": "diagnose", "role": "rate-limit-investigator", "risk": "low", "evidence": ["neutralized evidence 1", "neutralized evidence 2", "neutralized evidence 3"], "acceptance": "python -m unittest discover tests", "specialist": "rate-limit-investigator"}
+[close]routing[sep]
+[open]mission[sep]
+Neutralized mission text.
+[close]mission[sep]
+[open]invariants[sep]
+Neutralized invariants text.
+[close]invariants[sep]
+[open]source-of-truth[sep]
+Neutralized source-of-truth text.
+[close]source-of-truth[sep]
+[open]acceptance[sep]
+python tools/check_report reports/real-27.md 
+[close]acceptance[sep]
+[open]write-scope[sep]
+Only reports/ and scratch/real-27/.
+[close]write-scope[sep]
+[open]stop-conditions[sep]
+Neutralized stop-conditions text.
+[close]stop-conditions[sep]
+[open]report-path[sep]
+reports/real-27.md
+[close]report-path[sep]
+[close]task[sep]
