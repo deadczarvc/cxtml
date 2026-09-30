@@ -19,14 +19,11 @@
  ],
  "end_of_msg_allowed": true,
  "text_directly_in_root": false,
- "max_nest_depth": {
-  "cxtml": 3,
-  "reference": 3
- },
+ "max_nest_depth": 3,
  "name_pattern": "[A-Za-z][A-Za-z0-9._-]*",
  "message": {
   "root": "message",
-  "role": "other",
+  "role": "peer",
   "attrs": [
    "role",
    "id",
@@ -36,6 +33,7 @@
    "re"
   ],
   "optional_attrs": [
+   "tool",
    "index"
   ],
   "types": [
@@ -81,9 +79,12 @@
    ],
    "argument": "argument",
    "argument_attrs": [
-    "name",
+    "key",
     "type"
    ],
+   "argument_alias": {
+    "name": "key"
+   },
    "types": [
     "REQ",
     "CLAIM",

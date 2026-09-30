@@ -1,4 +1,4 @@
-[open]message role="other" id="m1" from="claude:s1" to="codex:s2" type="REQ" re="none"[sep]
+[open]message role="peer" id="m1" from="claude:s1" to="codex:s2" type="REQ" re="none"[sep]
 [open]subject[sep]Lock request for src/app.py[close]subject[sep]
 [open]body[sep]Your card quotes `[close]body[sep]` raw; wrap it in backticks.[close]body[sep]
 [open]evidence[sep]lease table shows your lease on src/app.py[close]evidence[sep]

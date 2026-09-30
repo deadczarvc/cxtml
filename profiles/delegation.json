@@ -46,10 +46,7 @@
  ],
  "end_of_msg_allowed": false,
  "text_directly_in_root": false,
- "max_nest_depth": {
-  "cxtml": 3,
-  "reference": 3
- },
+ "max_nest_depth": 3,
  "name_pattern": "[A-Za-z][A-Za-z0-9._-]*",
  "mandatory_sections": [
   "task",

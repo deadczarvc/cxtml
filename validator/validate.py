@@ -105,6 +105,9 @@ EOM_ALLOWED = {"kimi", "any", "message"}  # message: W65, прил. F
 # делегат не разбирает её согласованно, и обязательное ядро на глубине не проверяется.
 # Три уровня остаются законными (task → steps → step), четвёртый — отказ.
 MAX_NEST_DEPTH = 3
+# App. F Fig. 16 nests message > tools > call > argument: four levels. The kimi profile checks the
+# original notation, so its ceiling is the original one (cXTML/1.0: every App. F document is valid).
+KIMI_NEST_DEPTH = 4
 
 # Скобки могут сойтись у карточки, которая ничего не поручает. Замерено адверсарным
 # разбором: пять структурно безупречных и семантически мёртвых карточек — пустая приёмка,
@@ -144,6 +147,48 @@ NON_ASCII = regex.compile(r"[^\x00-\x7F]")
 # Markers hidden in an attribute value. [sep] cannot appear (it would end the header), so
 # the smuggling channel is the ones that survive: the bare brackets and the stop marker.
 MARKER_IN_VALUE = regex.compile(r"\[open\]|\[close\]|\[end_of_msg\]")
+# cXTML/1.0 literal regions (owner rule 2026-10-01). A reserved marker inside a CommonMark code span
+# (a run of N backticks ... the next run of exactly N backticks in the same paragraph) or inside a
+# fenced block (``` or ~~~ at a line start, closed by a line of the same character, length >= the
+# opening run) is TEXT, not markup. An opener without its closer escapes nothing: the marker counts.
+# Literal regions exist only in element content: headers and attribute values never carry markers.
+LITERAL_OPEN = regex.compile(r"(?m)^ {0,3}(?P<fence>`{3,}(?=[^`\n]*$)|~{3,})|(?P<ticks>`+)")
+TICKS = regex.compile(r"`+")
+BLANK_LINE = regex.compile(r"\n[ \t]*\n")
+
+
+def _literal_end(text: str, lo: regex.Match) -> int | None:
+    """End offset of the literal region opened by `lo`, or None when it is never closed."""
+    if lo.group("fence"):
+        run = lo.group("fence")
+        close = regex.compile(rf"(?m)^ {{0,3}}{regex.escape(run[0])}{{{len(run)},}}[ \t]*$")
+        nl = text.find("\n", lo.end())
+        m = close.search(text, nl + 1) if nl != -1 else None
+        return m.end() if m else None
+    n = len(lo.group("ticks"))
+    para = BLANK_LINE.search(text, lo.end())
+    for t in TICKS.finditer(text, lo.end(), para.start() if para else len(text)):
+        if len(t.group(0)) == n:
+            return t.end()
+    return None
+
+
+def _next_marker(text: str, i: int, literal_hits: list[int]) -> regex.Match | None:
+    """Next reserved marker at or after i that is not inside a literal region."""
+    while True:
+        m = MARKER.search(text, i)
+        if not m:
+            return None
+        lo = LITERAL_OPEN.search(text, i)
+        if not lo or lo.start() >= m.start():
+            return m
+        end = _literal_end(text, lo)
+        if end is None:
+            i = lo.end()            # unclosed opener: plain text, markers after it count
+            continue
+        if MARKER.search(text, lo.start(), end):
+            literal_hits.append(lo.start())
+        i = end
 
 
 # Раньше здесь стоял список из шести кодовых точек. Список этого класса недостижим: Unicode
@@ -349,19 +394,21 @@ try:
 except (OSError, ValueError, KeyError, TypeError) as _exc:
     print(f"card-format.json unusable ({type(_exc).__name__}); using the built-in vocabulary",
           file=sys.stderr)
-# W65 2026-10-01: профиль message — горизонтальная карта агент↔агент (peer message), ¬ постановка. Грамматика
-# первоисточника (arXiv 2607.24653, прил. F): верхняя единица message с role; межагентное сообщение — role="other";
-# запрос к соседу МОЖЕТ нести call tool= index= с дочерними argument name= type= (результат ответа сопоставляется с
-# вызовом по index); [end_of_msg] допустим в конце. Наши атрибуты id / from / to / type / re и разделы subject /
-# body / evidence / needs / until — поверх. Владелец словаря — блок "message" в card-format.json (контракт как у
+# W65 2026-10-01 (выровнено W68 2026-10-01 по encoding_k3.py): профиль message — горизонтальная карта агент↔агент
+# (peer message), ¬ постановка. Грамматика первоисточника (arXiv 2607.24653, прил. F; код encoding_k3.py — истина):
+# верхняя единица message с role; роли прил. F — system | user | tool | assistant, межагентное сообщение — role="peer"
+# (расширение cXTML [X], ¬ прил. F); запрос к соседу МОЖЕТ нести call tool= index= с дочерними argument key= type=
+# (_render_assistant_segments); ответ на вызов несёт tool= index= вызова, как результат инструмента прил. F
+# (message role="tool" tool= index=); argument name= — устаревший алиас key= (предупреждение); [end_of_msg] допустим
+# в конце. Наши атрибуты id / from / to / type / re и разделы subject / body / evidence / needs / until — поверх. Владелец словаря — блок "message" в card-format.json (контракт как у
 # CAPABILITY_KEYS: словарь ниже — запасной). Карту читает машина (peer-bus send --xtml, messages.jsonl), поэтому
 # неизвестный раздел или атрибут — отказ, а не предупреждение: это канал доставки непроверенного текста соседу.
-MSG = {"root": "message", "role": "other", "attrs": ["role", "id", "from", "to", "type", "re"],
-       "optional_attrs": ["index"], "types": ["REQ", "ACK", "NACK", "INFO", "CLAIM", "CONFLICT", "HANDOFF", "ESCALATE"],
+MSG = {"root": "message", "role": "peer", "attrs": ["role", "id", "from", "to", "type", "re"],
+       "optional_attrs": ["tool", "index"], "types": ["REQ", "ACK", "NACK", "INFO", "CLAIM", "CONFLICT", "HANDOFF", "ESCALATE"],
        "sections": ["subject", "body", "evidence", "needs", "until"], "until_required": ["REQ", "CLAIM", "CONFLICT"],
        "needs_none_ok": ["INFO", "ACK"], "re_required": ["ACK", "NACK"], "closing_types": ["ACK", "NACK", "HANDOFF"],
-       "call": {"tag": "call", "attrs": ["tool", "index"], "argument": "argument", "argument_attrs": ["name", "type"],
-                "types": ["REQ", "CLAIM", "CONFLICT"]}}
+       "call": {"tag": "call", "attrs": ["tool", "index"], "argument": "argument", "argument_attrs": ["key", "type"],
+                "argument_alias": {"name": "key"}, "types": ["REQ", "CLAIM", "CONFLICT"]}}
 try:
     MSG = {**MSG, **json.loads(_CARD_FORMAT.read_text(encoding="utf-8")).get("message", {})}
 except (OSError, ValueError, TypeError, AttributeError):
@@ -388,7 +435,8 @@ def _message_complaints(rep: Report) -> list[str]:
     if extra:
         bad.append(f"у «{MSG['root']}» неизвестные атрибуты — " + ", ".join(sorted(extra)))
     if a["role"] != MSG["role"]:
-        bad.append(f"role «{a['role'][:20]}» — межагентное сообщение несёт role=\"{MSG['role']}\" (прил. F)")
+        bad.append(f"role «{a['role'][:20]}» — межагентное сообщение несёт role=\"{MSG['role']}\" (расширение cXTML; "
+                   "роли прил. F system | user | tool | assistant — encoding_k3.py, «other» там нет)")
     t = a["type"]
     if t not in MSG["types"]:
         bad.append(f"type «{t}» вне словаря — допустимы: " + " | ".join(MSG["types"]))
@@ -402,9 +450,15 @@ def _message_complaints(rep: Report) -> list[str]:
         bad.append(f"re «{a['re'][:40]}» — id треда или none")
     if a["re"] == "none" and t in MSG["re_required"]:
         bad.append(f"{t} без re — отвечать не на что; re = id сообщения, на которое ответ")
-    if "index" in a and (not a["index"].isdigit() or t not in MSG["closing_types"] or a["re"] == "none"):
-        bad.append("index на корне — только у ответа (" + " | ".join(MSG["closing_types"])
-                   + ") с re, целое: номер вызова call, на который ответ")
+    if "tool" in a or "index" in a:
+        if t not in MSG["closing_types"] or a["re"] == "none":
+            bad.append("tool / index на корне — только у ответа (" + " | ".join(MSG["closing_types"])
+                       + ") с re: вызов call, на который ответ")
+        elif "tool" not in a or "index" not in a:
+            bad.append("tool и index у ответа идут парой, как у результата инструмента прил. F "
+                       "(message role=\"tool\" tool= index=)")
+        elif not a["index"].isdigit() or not MSG_ID.match(a["tool"]):
+            bad.append("у ответа tool — имя ([A-Za-z0-9._-]), index — целое: номер вызова call")
     c = MSG["call"]
     unknown = sorted(set(rep.content) - set(MSG["sections"]) - {c["tag"], MSG["root"]})
     if unknown:
@@ -419,9 +473,16 @@ def _message_complaints(rep: Report) -> list[str]:
     for tag, depth, at in rep.elems:
         if tag == c["tag"] and (depth != 2 or sorted(at) != sorted(c["attrs"]) or not at["index"].isdigit()):
             bad.append(f"«{tag}» — прямой раздел сообщения с атрибутами tool и целым index, ничего больше")
-        if tag == c["argument"] and (depth != 3 or sorted(at) != sorted(c["argument_attrs"])
-                                     or not all(MSG_ID.match(v) for v in at.values())):
-            bad.append(f"«{tag}» — только внутри call, атрибуты name и type ([A-Za-z0-9._-])")
+        if tag == c["argument"]:
+            alias = {c.get("argument_alias", {}).get(k, k): v for k, v in at.items()}
+            if sorted(alias) == sorted(c["argument_attrs"]) and len(alias) == len(at) and alias != at:
+                rep.warnings.append(
+                    f"устаревший атрибут «{' '.join(sorted(set(at) - set(alias)))}» у «{tag}» — замени на "
+                    f"«{' '.join(sorted(set(alias) - set(at)))}» (encoding_k3.py: key + type); алиас будет снят")
+            if depth != 3 or sorted(alias) != sorted(c["argument_attrs"]) or len(alias) != len(at) \
+                    or not all(MSG_ID.match(v) for v in at.values()):
+                bad.append(f"«{tag}» — только внутри call, атрибуты key и type ([A-Za-z0-9._-]); "
+                           "name — устаревший алиас key, вместе они не ходят")
     idx = [at.get("index") for _tag, at in calls]
     if len(idx) != len(set(idx)):
         bad.append("index вызовов повторяется — ответ не сопоставить с вызовом")
@@ -650,13 +711,16 @@ class Report:
         self.elems: list[tuple[str, int, dict[str, str]]] = []
 
 
-def scan(text: str, vocab: set[str], eom_allowed: bool, strict_gaps: bool = True) -> Report:
+def scan(text: str, vocab: set[str], eom_allowed: bool, strict_gaps: bool = True,
+         max_depth: int = MAX_NEST_DEPTH) -> Report:
     """Stop at the first structural divergence: a fixer needs the place where the document
     stopped meaning what it says, not the cascade downstream."""
     r = Report()
     stack: list[tuple[str, int, int]] = []
     eom_at: int | None = None
     closed_root = False
+    root_end = 0
+    literal_hits: list[int] = []
     i = 0
 
     def fail(msg: str) -> Report:
@@ -664,7 +728,7 @@ def scan(text: str, vocab: set[str], eom_allowed: bool, strict_gaps: bool = True
         return r
 
     while True:
-        m = MARKER.search(text, i)
+        m = _next_marker(text, i, literal_hits)
         if not m:
             break
         kind, start = m.group(0), m.start()
@@ -778,8 +842,8 @@ def scan(text: str, vocab: set[str], eom_allowed: bool, strict_gaps: bool = True
             if not stack and r.root is None:
                 r.root = tag
                 r.attrs = dict(ATTR.findall(pm.group(2)))
-            if len(stack) >= MAX_NEST_DEPTH:
-                return fail(f"{_pos(text, start)}: вложенность глубже {MAX_NEST_DEPTH} "
+            if len(stack) >= max_depth:
+                return fail(f"{_pos(text, start)}: вложенность глубже {max_depth} "
                             f"уровней — «{tag}» на уровне {len(stack) + 1}; карточка "
                             f"предназначена для плоских разделов")
             stack.append((tag, start, sep + len(SEP)))
@@ -808,15 +872,20 @@ def scan(text: str, vocab: set[str], eom_allowed: bool, strict_gaps: bool = True
                             f"«{top}» ({_pos(text, opened_at)}) — вложенность нарушена")
             if not stack:
                 closed_root = True
+                root_end = sep + len(SEP)
 
         i = sep + len(SEP)
 
     if stack:
         tag, opened_at, _ = stack[-1]
         r.errors.append(f"{_pos(text, opened_at)}: элемент «{tag}» открыт и не закрыт")
+    for p in literal_hits:
+        r.warnings.append(f"{_pos(text, p)}: зарезервированный маркер внутри литеральной области "
+                          f"(code span / fenced block) — это текст, не разметка (cXTML/1.0)")
     if closed_root and not r.errors:
-        end = text.rfind(CLOSE)
-        tail = text[text.find(SEP, end) + len(SEP):] if end != -1 else ""
+        # root_end, not rfind(CLOSE): a close marker quoted in a literal region after the root
+        # would otherwise be taken for the root's own close.
+        tail = text[root_end:]
         if _meaningful(tail.replace(EOM, "")):
             r.errors.append("после закрытия корневого элемента идёт текст: "
                             f"«{_meaningful(tail)[:50]}» — он не часть карточки и до "
@@ -876,7 +945,8 @@ def main(argv: list[str] | None = None) -> int:
     # `[open]message role="user"[sep]Privet[close]message[sep]` — то есть ровно то, ради
     # чего профиль kimi существует. Поймано адверсарным проходом в тот же час.
     rep = scan(text, vocab, eom_allowed=args.profile in EOM_ALLOWED,
-               strict_gaps=args.profile in ("delegation", "message"))
+               strict_gaps=args.profile in ("delegation", "message"),
+               max_depth=KIMI_NEST_DEPTH if args.profile in ("kimi", "any") else MAX_NEST_DEPTH)
 
     # Скобки сошлись — это ещё не карточка. Ниже то, без чего постановка не поручает
     # ничего проверяемого. Проверяется только у профиля делегирования: у kimi и any другой

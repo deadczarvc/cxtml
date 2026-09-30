@@ -27,12 +27,13 @@ Every document valid under App. F XTML (profile `kimi`) is valid cXTML.
 
 | path | content |
 |---|---|
-| `spec/SPEC.md` | the specification, GENERATED (rules + grammar + vocabulary + reference lag) |
+| `spec/SPEC.md` | the specification, GENERATED (rules + grammar + vocabulary) |
 | `grammar/` | normative rules (`RULES.md`) and ABNF (`cxtml.abnf`); App. F vs cXTML origin marked per rule |
 | `profiles/` | per-profile vocabulary, GENERATED from the validator |
-| `validator/` | mirror of the upstream reference validator, pinned by `SOURCE.lock`; `proposed/` = the cXTML/1.0 patch |
+| `validator/` | mirror of the upstream reference validator, pinned by `SOURCE.lock` |
 | `corpus/valid`, `corpus/invalid` | conformance cards, one `.expect.json` verdict per card |
-| `tests/` | conformance runner |
+| `validator/codec.py` | reference codec (stdlib): one AST, a text renderer and a K3 token renderer, `parse` for both |
+| `tests/` | conformance runner (`test_conformance.py`), codec round trips and differential checks (`test_codec.py`) |
 | `examples/` | small annotated documents per profile |
 | `tools/` | spec renderer, mirror sync check, sanitization gate |
 

@@ -59,6 +59,7 @@ A reserved marker spelling is structure unless it lies inside a literal region. 
 5. Validators SHOULD warn when a literal region contains a marker spelling: a stray pair of backticks in two sections of one paragraph can merge those sections silently.
 6. Why not a backslash escape: text-form cards name Windows paths, and a path ending in a backslash directly before a close marker is common; backslash escaping would silently swallow that marker.
 7. K3 native mode: an encoder MUST emit the content of a literal region as text tokens, never as control tokens.
+8. Quotes [X]: a literal region that holds a reserved marker spelling is a quote. Its delimiters are not part of the text (a code span loses its backtick runs and, when its content starts and ends with a space, one pad space; a fenced block loses its two fence lines); a writer puts one pad space inside a code span whose text starts or ends with a backtick, and keeps the outer whitespace of the quoted paragraph outside the span. A literal region without a marker spelling is ordinary text and keeps its backticks. The text form may lack a faithful spelling for marker-free text whose backtick runs or fence lines would pair across element boundaries; the reference codec (`validator/codec.py`) refuses to write such a document in text form, while the token form always exists.
 
 ### 1.7 Attribute values
 
@@ -78,7 +79,7 @@ A profile fixes the element vocabulary and the extra checks; the lists are gener
 
 - `kimi` [F]: the original chat-template vocabulary; no mandatory sections. Validators return the advisory code 1 when clean, because this profile checks the original notation, not a cXTML card.
 - `delegation` [X]: a task card for a delegate: mandatory core sections, the routing v2 JSON packet with strict fields and enums, optional canon-v2 sections with value vocabularies, an executable acceptance command, a report path that climbs nowhere.
-- `message` [X, on F]: a peer message between agents. Root `message` with `role="other"`; a request MAY carry `call` elements with `tool` and `index` and `argument` children; a reply correlates with a call by `index` [F: results correlate by the tool/index pair]. Open issue: App. F Fig. 16 names the argument attributes `key` and `type`; this profile currently uses `name` and `type`.
+- `message` [X, on F]: a peer message between agents. Root `message` with `role="peer"` [X] (the roles emitted by `encoding_k3.py` are system, user, tool, assistant; there is no `other`). A request MAY carry `call` elements with `tool` and `index` [E: `_render_assistant_segments`] and `argument` children with `key` and `type` [E]; `argument name=` is a deprecated alias of `key` and warns. A reply (ACK, NACK or HANDOFF with `re`) that answers a call carries the call's `tool` and `index` on the root, as an App. F tool result does [E: role `tool` message with `tool` and `index`]; the pair is both-or-neither and only on replies.
 
 ### 1.10 Validation before delivery [X]
 

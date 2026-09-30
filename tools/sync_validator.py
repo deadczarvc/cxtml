@@ -35,6 +35,7 @@ UPSTREAM = {
     "validate.py": "tools/xtml/validate.py",
     "cmdcheck.py": "tools/cmdcheck.py",
     "card-format.json": "config/card-format.json",
+    "codec.py": "tools/xtml/codec.py",
 }
 PROSE_KEYS = {"why", "notes"}
 

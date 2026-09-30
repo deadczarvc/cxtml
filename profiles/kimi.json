@@ -17,9 +17,6 @@
  ],
  "end_of_msg_allowed": true,
  "text_directly_in_root": true,
- "max_nest_depth": {
-  "cxtml": 4,
-  "reference": 3
- },
+ "max_nest_depth": 4,
  "name_pattern": "[A-Za-z][A-Za-z0-9._-]*"
 }

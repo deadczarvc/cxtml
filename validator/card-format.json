@@ -85,9 +85,9 @@
   "ralph-round"
  ],
  "message": {
-  "why": "W65 2026-10-01: горизонтальная карта агент↔агент (peer message), ¬ постановка. Грамматика первоисточника XTML (arXiv 2607.24653, прил. F): корень message role=\"other\"; запрос МОЖЕТ нести call tool= index= с argument name= type=; ответ сопоставляется с вызовом по index; [end_of_msg] допустим в конце. Потребители: tools/xtml/validate.py (profile message), <peer-bus> (send --xtml, messages.jsonl).",
+  "why": "W65 2026-10-01, выровнено W68 2026-10-01 по encoding_k3.py (код первоисточника — истина; роли прил. F: system | user | tool | assistant): горизонтальная карта агент↔агент (peer message), ¬ постановка. Корень message role=\"peer\" (расширение cXTML [X], ¬ прил. F); запрос МОЖЕТ нести call tool= index= с argument key= type= (name= — устаревший алиас key=, предупреждение); ответ на вызов несёт tool= index= вызова, как результат инструмента прил. F (message role=tool tool= index=); [end_of_msg] допустим в конце. Потребители: tools/xtml/validate.py (profile message), tools/xtml/codec.py, <peer-bus> (send --xtml, messages.jsonl).",
   "root": "message",
-  "role": "other",
+  "role": "peer",
   "attrs": [
    "role",
    "id",
@@ -97,6 +97,7 @@
    "re"
   ],
   "optional_attrs": [
+   "tool",
    "index"
   ],
   "types": [
@@ -142,9 +143,12 @@
    ],
    "argument": "argument",
    "argument_attrs": [
-    "name",
+    "key",
     "type"
    ],
+   "argument_alias": {
+    "name": "key"
+   },
    "types": [
     "REQ",
     "CLAIM",

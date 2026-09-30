@@ -1,13 +1,15 @@
 {
  "map_sha256": "38cc3fabf32a1351dfa13e6fe7f3ef7239ccfe015dace04a3111ff4f77929cbf",
  "mirror_sha256": {
-  "card-format.json": "bb86095e5712e86261dd31d9e26f4139f0e39d4971d5dec5b5b0e68a9dd3cbe5",
+  "card-format.json": "9e33284e5c003c6b9736e0b90e8683b68aa11b75fed5fa437bbc301337599d95",
   "cmdcheck.py": "5b28b391ac03dda51cb2cd2ab603186fefe30660a5785b0c2b0ded10d7c3f14b",
-  "validate.py": "b76acf70a9efa45ec6d639d5e1c6b078dd4ab0ec09849160ca27904d4db21cd2"
+  "codec.py": "a496aa8d7b8ac4b8e70c02a85ffd75993b9a4ea650036ff25b161d839cbd11b9",
+  "validate.py": "68a85b5fe2c19a6bf029f350dba936b6a9cb51b8c96aab1e43140ee3a5d9941b"
  },
  "upstream_sha256": {
-  "card-format.json": "9901de56f84c7be3c8c83b8a9c55f1caa36f66c87bc15da91dd6b2b4dae1047f",
+  "card-format.json": "9e33284e5c003c6b9736e0b90e8683b68aa11b75fed5fa437bbc301337599d95",
   "cmdcheck.py": "5b28b391ac03dda51cb2cd2ab603186fefe30660a5785b0c2b0ded10d7c3f14b",
-  "validate.py": "59d00e0fed05a7a8ac2dee61df6360c8a5177d2de8dbeaaa89892e20cb53209f"
+  "codec.py": "a496aa8d7b8ac4b8e70c02a85ffd75993b9a4ea650036ff25b161d839cbd11b9",
+  "validate.py": "68a85b5fe2c19a6bf029f350dba936b6a9cb51b8c96aab1e43140ee3a5d9941b"
  }
 }
