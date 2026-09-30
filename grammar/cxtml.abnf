@@ -1,0 +1,34 @@
+; cXTML/1.0, text form. ABNF per RFC 5234; %s"..." = case-sensitive string (RFC 7405).
+; Token form (K3 native) is the same tree with the four markers as control tokens: RULES.md 1.2.
+; Constraints ABNF cannot state are marked (*) and defined in RULES.md.
+
+document       = [preamble] element *ws [eom *ws]      ; eom only where the profile allows it (1.8)
+preamble       = *char                                 ; (*) not part of the document; validators warn
+
+element        = open-tag content close-tag            ; (*) close name == open name (1.3)
+open-tag       = OPEN *ws name *(1*ws attribute) *ws SEP
+close-tag      = CLOSE *ws name *ws SEP                ; a bare CLOSE is invalid
+attribute      = name "=" DQUOTE attr-value DQUOTE     ; (*) a key at most once per element
+attr-value     = *attr-char                            ; (*) no reserved marker spelling (1.7)
+attr-char      = %x00-21 / %x23-10FFFF                 ; anything but DQUOTE
+entity         = %s"&amp;" / %s"&quot;" / %s"&#91;"    ; decoded by readers, in reverse order (1.7)
+
+name           = ALPHA *(ALPHA / DIGIT / "." / "_" / "-")   ; ASCII only
+
+content        = *(text / literal-region / element)    ; (*) depth ceiling per profile (1.4)
+text           = 1*char                                ; (*) holds no marker spelling (1.6)
+literal-region = code-span / fenced-block              ; (*) markers inside are text (1.6)
+code-span      = tick-run span-body tick-run           ; (*) both runs of equal length N, same paragraph
+span-body      = *char                                 ; (*) no backtick run of exactly N, no blank line
+tick-run       = 1*"`"
+fenced-block   = fence-open *char LF fence-close       ; (*) same fence char, close length >= open length
+fence-open     = 0*3SP (3*"`" / 3*"~")                 ; (*) at a line start; no backtick after a ``` opener
+fence-close    = 0*3SP (3*"`" / 3*"~") *WSP            ; (*) a whole line
+
+OPEN           = %s"[open]"
+SEP            = %s"[sep]"
+CLOSE          = %s"[close]"
+eom            = %s"[end_of_msg]"
+
+ws             = SP / HTAB / CR / LF
+char           = %x00-10FFFF
