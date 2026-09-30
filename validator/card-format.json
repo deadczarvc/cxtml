@@ -1,0 +1,155 @@
+{
+ "schema": "card-format/v1",
+ "why": "Единственный владелец формата карточки. Три потребителя (валидатор карточек, разборщик требований, матрица через гейт) читают эти списки вместо собственных замороженных копий, поэтому слово, обязательное для одного, больше не может быть запрещено у другого. Найдено 2026-09-11: ключ mechanical требовался матрицей и запрещался валидатором.",
+ "sections": {
+  "mandatory": [
+   "task",
+   "mission",
+   "invariants",
+   "source-of-truth",
+   "acceptance",
+   "write-scope",
+   "stop-conditions",
+   "report-path"
+  ],
+  "known_extra": [
+   "routing",
+   "role",
+   "capability-requirements",
+   "steps",
+   "handoff",
+   "context",
+   "note",
+   "constraints",
+   "reporting-contract",
+   "forbid",
+   "design-options",
+   "architecture-decision"
+  ],
+  "enforced_count": {
+   "routing": 1
+  }
+ },
+ "capability_keys": [
+  "terminal",
+  "vision",
+  "reasoning",
+  "long-context",
+  "mechanical"
+ ],
+ "matrix_flags": [
+  "vision",
+  "reasoning",
+  "mechanical"
+ ],
+ "routing_fields": [
+  "phase",
+  "role",
+  "risk",
+  "scope",
+  "contract",
+  "evidence",
+  "acceptance",
+  "localized",
+  "mechanical",
+  "failure",
+  "previous_tier",
+  "escalations",
+  "specialist"
+ ],
+ "routing_optional": [
+  "requirements"
+ ],
+ "phases": [
+  "collect",
+  "diagnose",
+  "implement",
+  "verify",
+  "arbitrate"
+ ],
+ "notes": {
+  "unknown_section": "Раздел вне обязательных и известных — не ошибка, но сигнал: если он повторяется, его место в known_extra.",
+  "unknown_capability_key": "Ошибка. Ключ никто не прочитает и требование потеряется молча.",
+  "consumers": [
+   "tools/xtml/validate.py",
+   "hooks/evidence_router.py",
+   "hooks/preflight-gate.py",
+   "scripts/card-format-check.py"
+  ],
+  "arbitrate": "Добавлено 2026-09-22: фаза арбитража консенсуса (sigma compiler + evidence_router её уже допускали; card-format отставал).",
+  "loop_classes": "Single owner for the loop-class vocabulary (W1a finding K2 2026-09-26): validate.py frozen tuple was the de-facto owner; moved here so all gates read one source."
+ },
+ "loop_classes": [
+  "one-shot",
+  "continuable",
+  "ralph-round"
+ ],
+ "message": {
+  "why": "W65 2026-10-01: горизонтальная карта агент↔агент (peer message), ¬ постановка. Грамматика первоисточника XTML (arXiv 2607.24653, прил. F): корень message role=\"other\"; запрос МОЖЕТ нести call tool= index= с argument name= type=; ответ сопоставляется с вызовом по index; [end_of_msg] допустим в конце. Потребители: tools/xtml/validate.py (profile message), <peer-bus> (send --xtml, messages.jsonl).",
+  "root": "message",
+  "role": "other",
+  "attrs": [
+   "role",
+   "id",
+   "from",
+   "to",
+   "type",
+   "re"
+  ],
+  "optional_attrs": [
+   "index"
+  ],
+  "types": [
+   "REQ",
+   "ACK",
+   "NACK",
+   "INFO",
+   "CLAIM",
+   "CONFLICT",
+   "HANDOFF",
+   "ESCALATE"
+  ],
+  "sections": [
+   "subject",
+   "body",
+   "evidence",
+   "needs",
+   "until"
+  ],
+  "until_required": [
+   "REQ",
+   "CLAIM",
+   "CONFLICT"
+  ],
+  "needs_none_ok": [
+   "INFO",
+   "ACK"
+  ],
+  "re_required": [
+   "ACK",
+   "NACK"
+  ],
+  "closing_types": [
+   "ACK",
+   "NACK",
+   "HANDOFF"
+  ],
+  "call": {
+   "tag": "call",
+   "attrs": [
+    "tool",
+    "index"
+   ],
+   "argument": "argument",
+   "argument_attrs": [
+    "name",
+    "type"
+   ],
+   "types": [
+    "REQ",
+    "CLAIM",
+    "CONFLICT"
+   ]
+  }
+ }
+}
