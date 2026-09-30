@@ -1,0 +1,94 @@
+{
+ "version": "cXTML/1.0",
+ "profile": "message",
+ "markers": {
+  "open": "[open]",
+  "sep": "[sep]",
+  "close": "[close]",
+  "end_of_msg": "[end_of_msg]"
+ },
+ "elements": [
+  "argument",
+  "body",
+  "call",
+  "evidence",
+  "message",
+  "needs",
+  "subject",
+  "until"
+ ],
+ "end_of_msg_allowed": true,
+ "text_directly_in_root": false,
+ "max_nest_depth": {
+  "cxtml": 3,
+  "reference": 3
+ },
+ "name_pattern": "[A-Za-z][A-Za-z0-9._-]*",
+ "message": {
+  "root": "message",
+  "role": "other",
+  "attrs": [
+   "role",
+   "id",
+   "from",
+   "to",
+   "type",
+   "re"
+  ],
+  "optional_attrs": [
+   "index"
+  ],
+  "types": [
+   "REQ",
+   "ACK",
+   "NACK",
+   "INFO",
+   "CLAIM",
+   "CONFLICT",
+   "HANDOFF",
+   "ESCALATE"
+  ],
+  "sections": [
+   "subject",
+   "body",
+   "evidence",
+   "needs",
+   "until"
+  ],
+  "until_required": [
+   "REQ",
+   "CLAIM",
+   "CONFLICT"
+  ],
+  "needs_none_ok": [
+   "INFO",
+   "ACK"
+  ],
+  "re_required": [
+   "ACK",
+   "NACK"
+  ],
+  "closing_types": [
+   "ACK",
+   "NACK",
+   "HANDOFF"
+  ],
+  "call": {
+   "tag": "call",
+   "attrs": [
+    "tool",
+    "index"
+   ],
+   "argument": "argument",
+   "argument_attrs": [
+    "name",
+    "type"
+   ],
+   "types": [
+    "REQ",
+    "CLAIM",
+    "CONFLICT"
+   ]
+  }
+ }
+}
