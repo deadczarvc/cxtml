@@ -97,6 +97,7 @@ def profiles() -> dict[str, dict]:
             **common("message", ref.MAX_NEST_DEPTH),
             "message": {k: v for k, v in ref.MSG.items() if k != "why"},
         },
+        "doc": {**common("doc", ref.MAX_NEST_DEPTH), "roots": list(ref.DOC["roots"]), "closed_vocabulary": True},
     }
 
 

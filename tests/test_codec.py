@@ -52,6 +52,17 @@ def expect(card: Path) -> dict:
     return json.loads(card.with_suffix(".expect.json").read_text(encoding="utf-8"))
 
 
+# validate.scan refusals that are semantic, not structural (the codec does not build on them): the declared gap
+SEMANTIC = (
+    "повторяется",
+    "обязательный раздел",
+    "значение атрибута",
+    "управляющие символы",
+    "нет ни одного элемента",
+    "вложен сам в себя",
+)
+
+
 def walk(e: Element, depth: int = 1):
     yield e.name, depth, dict(e.attrs)
     for c in e.children:
@@ -105,6 +116,17 @@ class Semantics(unittest.TestCase):
         self.assertEqual(render(ast), "[open]a[sep]`x [close]a[sep] y`[close]a[sep]\n")
         with self.assertRaises(CodecError):
             parse(naive)
+
+    def test_text_references_outside_quotes(self) -> None:
+        """Rule 1.6.9 (W73): &#96; &#126; &#38; decode in one pass in text outside quotes; quote content stays verbatim."""
+        self.assertEqual(
+            one("[open]a[sep]&#96; &#126; &#38;#96; &amp; &#91;[close]a[sep]").text(), "` ~ &#96; &amp; &#91;"
+        )
+        self.assertEqual(one("[open]a[sep]`[close] &#96;`[close]a[sep]").text(), "[close] &#96;")  # a quote: verbatim
+        self.assertEqual(one("[open]a[sep]`&#96;`[close]a[sep]").text(), "```")  # marker-free span = ordinary text
+        for s in ("&#96;", "&#38;", "&&#126;;", "&#38;#96; ` ~~~ [close]", "&#9", "&#96"):
+            with self.subTest(s):
+                self.assertEqual(parse(render(el("a", (), s))), Doc(el("a", (), s)))
 
     def test_attribute_entities(self) -> None:
         root = one('[open]a id="q &#91;close] &amp;#91; &quot;x&quot; &amp;"[sep][close]a[sep]')
@@ -189,16 +211,40 @@ class Semantics(unittest.TestCase):
         self.assertEqual(parse(render(doc)), doc)
 
     def test_mutation_without_the_quote_the_self_check_refuses(self) -> None:
-        with mock.patch.object(sys.modules["codec"], "_text_leaf", lambda s: s), self.assertRaises(CodecError):
-            render(
-                el("a", (), "x [close]a[sep] y")
-            )  # the mutated renderer emits a raw marker; render re-parses and refuses
+        codec = sys.modules["codec"]
+        with (
+            mock.patch.object(codec, "_text_leaf", lambda s: s),
+            mock.patch.object(codec, "_escaped_leaf", lambda s: s),
+            self.assertRaises(CodecError),
+        ):
+            render(el("a", (), "x [close]a[sep] y"))  # both mutated spellings emit a raw marker; render refuses
 
-    def test_unfaithful_text_form_is_refused_not_corrupted(self) -> None:
-        pair = el("a", (), el("b", (), "x `"), el("c", (), "` y"))  # two raw backticks would pair across structure
-        with self.assertRaises(CodecError):
-            render(pair)
-        self.assertEqual(parse(render(pair, "k3")), Doc(pair))  # K3 has the channel, text form has not
+    def test_mutation_escaped_spelling_without_escapes_is_refused(self) -> None:
+        pair = el("a", (), el("b", (), "x `"), el("c", (), "` y"))
+        with mock.patch.object(sys.modules["codec"], "_escaped_leaf", lambda s: s), self.assertRaises(CodecError):
+            render(pair)  # the fallback is guarded by the same self-check, not trusted
+
+    def test_cross_structure_pairing_gets_the_escaped_spelling(self) -> None:
+        """W73 (X11.14): the class W68 refused now has a faithful text form; the plain spelling still fails for it."""
+        fence = el("a", (), el("b", (), "\n```\n"), el("c", (), "\n```\n"))
+        for doc in (
+            el("a", (), el("b", (), "x `"), el("c", (), "` y")),
+            fence,
+            el("a", (), "\n~~~\n", el("b"), "\n~~~\n"),
+        ):
+            with self.subTest(doc=doc):
+                plain: list = []
+                sys.modules["codec"]._text_el(doc, plain)
+                with contextlib.suppress(CodecError):
+                    self.assertNotEqual(parse("".join(plain)), Doc(doc))  # plain spelling is not faithful here
+                text = render(doc)
+                self.assertNotIn("`", text.replace("&#96;", ""))  # no raw backtick left to pair
+                self.assertEqual(parse(text), Doc(doc))
+                self.assertEqual(parse(render(doc, "k3")), Doc(doc))
+        self.assertEqual(
+            render(el("a", (), el("b", (), "x `"), el("c", (), "` y [close]"))),
+            "[open]a[sep][open]b[sep]x &#96;[close]b[sep][open]c[sep]&#96; y `[close]`[close]c[sep][close]a[sep]\n",
+        )
 
 
 @unittest.skipUnless(K3_PATH.is_file(), "encoding_k3.py not found (set XTML_ENCODING_K3)")
@@ -278,19 +324,11 @@ class Corpus(unittest.TestCase):
         """Differential: codec.parse and validate.scan agree on structure for every corpus card; where scan refuses
         for a structural reason the codec raises. Semantic-only refusals (scan flags them, the codec does not build on
         them) are the declared gap."""
-        semantic = (
-            "повторяется",
-            "обязательный раздел",
-            "значение атрибута",
-            "управляющие символы",
-            "нет ни одного элемента",
-            "вложен сам в себя",
-        )
         for card in CARDS:
             text = card.read_text(encoding="utf-8")
             with self.subTest(card=f"{card.parent.name}/{card.name}"):
                 rep = VALIDATE.scan(text, set(), True, strict_gaps=False, max_depth=99)
-                structural = [e for e in rep.errors if not any(s in e for s in semantic)]
+                structural = [e for e in rep.errors if not any(s in e for s in SEMANTIC)]
                 try:
                     doc = parse(text)
                 except CodecError:
@@ -358,24 +396,24 @@ class Generated(unittest.TestCase):
                 self.assertEqual(parse(render(ast, "text")), ast)
                 self.assertEqual(parse(render(ast, "k3")), ast)
 
-    def test_hostile_trees_round_trip_or_are_refused_never_corrupted(self) -> None:
+    def test_hostile_trees_always_round_trip_in_both_forms(self) -> None:
+        """W73 (X11.14): 600 / 600 in text form (W68: refusals for cross-structure pairing). The escaped spelling is
+        exercised, not assumed, and validate.scan reads every rendered text with the same structure as the codec."""
         rng = random.Random(6802)
-        refused = faithful = 0
+        escaped = 0
         for n in range(600):
             ast = Doc(self.tree(rng, hostile=True), eom=bool(n % 2))
-            self.assertEqual(parse(render(ast, "k3")), ast)  # K3 is total
-            try:
+            with self.subTest(n=n):
+                self.assertEqual(parse(render(ast, "k3")), ast)  # K3 is total
                 text = render(ast, "text")
-            except CodecError:
-                refused += 1
-                self.assertTrue(
-                    any(c in t for t in self.texts(ast.root) for c in "`~"), "refused without a backtick / tilde"
-                )
-                continue
-            faithful += 1
-            self.assertEqual(parse(text), ast)
-        self.assertGreater(faithful, 100)
-        self.assertGreater(refused, 0)  # the refusal path is exercised, not assumed
+                self.assertEqual(parse(text), ast)
+                escaped += "&#96;" in text or "&#126;" in text
+                rep = VALIDATE.scan(text, set(), True, strict_gaps=False, max_depth=99)
+                self.assertEqual([e for e in rep.errors if not any(x in e for x in SEMANTIC)], [])
+                mine = list(walk(ast.root))
+                theirs = [(t, d, {k: _dec(v, True) for k, v in a.items()}) for t, d, a in rep.elems]
+                self.assertEqual(theirs, mine[: len(theirs)] if rep.errors else mine)
+        self.assertGreater(escaped, 50)  # the fallback carries a real share of the hostile set
 
     def texts(self, e: Element):
         for c in e.children:

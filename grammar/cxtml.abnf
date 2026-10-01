@@ -17,6 +17,7 @@ name           = ALPHA *(ALPHA / DIGIT / "." / "_" / "-")   ; ASCII only
 
 content        = *(text / literal-region / element)    ; (*) depth ceiling per profile (1.4)
 text           = 1*char                                ; (*) holds no marker spelling (1.6)
+text-ref       = %s"&#96;" / %s"&#126;" / %s"&#38;"   ; (*) decoded in text outside quotes, one pass (1.6.9)
 literal-region = code-span / fenced-block              ; (*) markers inside are text (1.6)
 code-span      = tick-run span-body tick-run           ; (*) both runs of equal length N, same paragraph
 span-body      = *char                                 ; (*) no backtick run of exactly N, no blank line

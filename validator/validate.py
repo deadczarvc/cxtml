@@ -5,6 +5,7 @@
     python validate.py <file> --profile kimi   # vocabulary of the K3 chat template
     python validate.py <file> --strict         # unknown tags become a failure too
     python validate.py <file> --profile message  # peer message card agent<->agent (W65, peer-bus)
+    python validate.py <file> --profile doc      # document (program, plan): grammar + closed vocabulary, no card core
     python validate.py -                       # read the prompt from stdin
 
     exit 0  clean
@@ -414,6 +415,18 @@ try:
 except (OSError, ValueError, TypeError, AttributeError):
     pass
 VOCAB["message"] = {MSG["root"], *MSG["sections"], MSG["call"]["tag"], MSG["call"]["argument"]}
+# W73 2026-10-01 (X11.1): профиль doc — документ (программа, план, сводка), ¬ постановка ∧ ¬ сообщение. Прежде у документа
+# не было профиля: any = только грамматика (код 1 по замыслу), delegation требует ядро карточки, и потребитель сверял
+# словарь сам. Здесь грамматика + закрытый словарь (тег вне словаря — отказ, код 2: документ читает машина) + корень из
+# roots; ядра нет. Владелец словаря — блок "doc" в card-format.json (контракт как у MSG: ниже запасной).
+DOC = {"roots": ["doc", "task"],
+       "elements": ["evidence", "invariants", "item", "items", "mission", "note", "section", "step", "steps", "t",
+                    "targets"]}
+try:
+    DOC = {**DOC, **json.loads(_CARD_FORMAT.read_text(encoding="utf-8")).get("doc", {})}
+except (OSError, ValueError, TypeError, AttributeError):
+    pass
+VOCAB["doc"] = {*DOC["roots"], *DOC["elements"]}
 # Адрес actor'а peer-bus (W44): agent:sid — основной поток, agent:sid:<agent_id> — субагент; в to ещё
 # agent:sid:* (все живые actor'ы сессии) и lane:<имя> (полоса). ASCII по построению, как NAME. Разбор адреса для
 # доставки — один, agents.addr в peer-bus; здесь только форма.
@@ -945,7 +958,7 @@ def main(argv: list[str] | None = None) -> int:
     # `[open]message role="user"[sep]Privet[close]message[sep]` — то есть ровно то, ради
     # чего профиль kimi существует. Поймано адверсарным проходом в тот же час.
     rep = scan(text, vocab, eom_allowed=args.profile in EOM_ALLOWED,
-               strict_gaps=args.profile in ("delegation", "message"),
+               strict_gaps=args.profile in ("delegation", "message", "doc"),
                max_depth=KIMI_NEST_DEPTH if args.profile in ("kimi", "any") else MAX_NEST_DEPTH)
 
     # Скобки сошлись — это ещё не карточка. Ниже то, без чего постановка не поручает
@@ -1094,6 +1107,15 @@ def main(argv: list[str] | None = None) -> int:
     # W65: горизонтальная карта (profile message) — свои атрибуты и разделы, ¬ ядро постановки.
     if args.profile == "message" and not rep.errors:
         rep.errors.extend(_message_complaints(rep))
+
+    # W73: документ — корень из roots, словарь закрыт (вне словаря — отказ, а не предупреждение под --strict).
+    if args.profile == "doc" and not rep.errors:
+        if rep.root not in DOC["roots"]:
+            rep.errors.append(f"корневой элемент «{rep.root}» — документ начинается с одного из: "
+                              + " | ".join(DOC["roots"]))
+        rep.errors.extend(f"{w} — словарь документа закрыт (card-format.json doc): "
+                          f"неизвестный элемент не прочитает ни один потребитель" for w in rep.vocab_warnings)
+        rep.vocab_warnings = []
 
     for w in rep.vocab_warnings + rep.warnings:
         print(f"предупреждение: {w}")

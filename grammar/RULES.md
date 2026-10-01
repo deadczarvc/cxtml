@@ -22,8 +22,8 @@ Keywords MUST, MUST NOT, SHOULD, MAY are used as in RFC 2119. Every rule carries
 
 Bijection [X], built on [E]:
 
-- text form -> token form: every marker spelling that is structure (not inside a literal region, 1.6) becomes the matching control token (`_control`, special tokens allowed); every other character run becomes text tokens (`_text`, special tokens not allowed). Attribute values are entity-decoded (1.7) and re-escaped the way `_escape_attr_value` does.
-- token form -> text form: control tokens become their bracket spellings; text tokens are decoded; a decoded text run that contains a bracket spelling MUST be emitted inside a literal region (a code span whose backtick run is longer than any run inside it), so that it reads back as text.
+- text form -> token form: every marker spelling that is structure (not inside a literal region, 1.6) becomes the matching control token (`_control`, special tokens allowed); every other character run becomes text tokens (`_text`, special tokens not allowed), text references decoded (1.6.9). Attribute values are entity-decoded (1.7) and re-escaped the way `_escape_attr_value` does.
+- token form -> text form: control tokens become their bracket spellings; text tokens are decoded; a decoded text run that contains a bracket spelling MUST be emitted inside a literal region (a code span whose backtick run is longer than any run inside it), so that it reads back as text; where that spelling would not read back (1.6.9), the writer uses the escaped spelling.
 - In token form, structure and quoted marker text are separated by the encoding channel (control vs text tokens), so no escaping exists or is needed there [E]. In text form the channel is gone, and 1.6 / 1.7 replace it.
 - A token-form spelling such as `<|open|>` written in a text-form document is plain text, never a marker. An encoder MUST NOT emit it as a control token (the `_text` channel guarantees this) [E].
 
@@ -40,9 +40,9 @@ Bijection [X], built on [E]:
 1. Exactly one root element. Markup after the root is closed is an error [X].
 2. Only whitespace may follow the root, plus the end-of-message marker where the profile allows it (1.8) [X].
 3. Text before the root is not part of the document; validators warn [X].
-4. Nesting ceiling: profile `kimi` 4 levels, the depth of App. F Fig. 16 (`message` > `tools` > `call` > `argument`) [F]; profiles `delegation` and `message` 3 levels [X].
+4. Nesting ceiling: profile `kimi` 4 levels, the depth of App. F Fig. 16 (`message` > `tools` > `call` > `argument`) [F]; profiles `delegation`, `message` and `doc` 3 levels [X].
 5. The root element MUST NOT contain an element with its own name [X].
-6. In profiles `delegation` and `message` all text lives in sections: printable text directly in the root, between sections, is an error [X]. In profile `kimi` the message body is root text [F].
+6. In profiles `delegation`, `message` and `doc` all text lives in sections: printable text directly in the root, between sections, is an error [X]. In profile `kimi` the message body is root text [F].
 
 ### 1.5 Balance
 
@@ -59,7 +59,8 @@ A reserved marker spelling is structure unless it lies inside a literal region. 
 5. Validators SHOULD warn when a literal region contains a marker spelling: a stray pair of backticks in two sections of one paragraph can merge those sections silently.
 6. Why not a backslash escape: text-form cards name Windows paths, and a path ending in a backslash directly before a close marker is common; backslash escaping would silently swallow that marker.
 7. K3 native mode: an encoder MUST emit the content of a literal region as text tokens, never as control tokens.
-8. Quotes [X]: a literal region that holds a reserved marker spelling is a quote. Its delimiters are not part of the text (a code span loses its backtick runs and, when its content starts and ends with a space, one pad space; a fenced block loses its two fence lines); a writer puts one pad space inside a code span whose text starts or ends with a backtick, and keeps the outer whitespace of the quoted paragraph outside the span. A literal region without a marker spelling is ordinary text and keeps its backticks. The text form may lack a faithful spelling for marker-free text whose backtick runs or fence lines would pair across element boundaries; the reference codec (`validator/codec.py`) refuses to write such a document in text form, while the token form always exists.
+8. Quotes [X]: a literal region that holds a reserved marker spelling is a quote. Its delimiters are not part of the text (a code span loses its backtick runs and, when its content starts and ends with a space, one pad space; a fenced block loses its two fence lines); a writer puts one pad space inside a code span whose text starts or ends with a backtick, and keeps the outer whitespace of the quoted paragraph outside the span. A literal region without a marker spelling is ordinary text and keeps its backticks. Marker-free text whose backtick runs or fence lines would pair across element boundaries has no plain spelling; it is written in the escaped spelling (9).
+9. Text references [X] (2026-10-01): in element content outside quotes, readers decode exactly `&#96;` (backtick), `&#126;` (tilde) and `&#38;` (ampersand), in one left-to-right pass, so `&#38;#96;` reads as the literal text `&#96;`. Quote content (8) is never decoded; `&amp;`, `&#91;` and every other `&` sequence in content stay literal (attribute values keep 1.7). Writers use the plain spelling when it reads back and otherwise the escaped spelling: every backtick and tilde outside quotes as its reference, `&` as `&#38;` where it begins one of the three references, each run of marker spellings as its own one-backtick quote. With no raw backtick or tilde left to open a literal region, the escaped spelling exists for every tree, so the text form is total, as the token form is. Validators need no change: references are not backticks, so literal-region recognition (1-4) is untouched. Before the rule, 0 of 17 081 `.xtml` files on the reference station held any of the three spellings, so no existing document changes its reading.
 
 ### 1.7 Attribute values
 
@@ -71,7 +72,7 @@ A reserved marker spelling is structure unless it lies inside a literal region. 
 ### 1.8 End-of-message marker
 
 1. [F] `[end_of_msg]` is the generation stop marker that follows a closed message.
-2. [X] At most one, outside every element, and last in the document. Allowed in profiles `kimi` and `message`; forbidden in `delegation` (a delegation card that reached a K3-family stack would stop generation there).
+2. [X] At most one, outside every element, and last in the document. Allowed in profiles `kimi` and `message`; forbidden in `delegation` and `doc` (a delegation card that reached a K3-family stack would stop generation there).
 
 ### 1.9 Profiles
 
@@ -80,6 +81,7 @@ A profile fixes the element vocabulary and the extra checks; the lists are gener
 - `kimi` [F]: the original chat-template vocabulary; no mandatory sections. Validators return the advisory code 1 when clean, because this profile checks the original notation, not a cXTML card.
 - `delegation` [X]: a task card for a delegate: mandatory core sections, the routing v2 JSON packet with strict fields and enums, optional canon-v2 sections with value vocabularies, an executable acceptance command, a report path that climbs nowhere.
 - `message` [X, on F]: a peer message between agents. Root `message` with `role="peer"` [X] (the roles emitted by `encoding_k3.py` are system, user, tool, assistant; there is no `other`). A request MAY carry `call` elements with `tool` and `index` [E: `_render_assistant_segments`] and `argument` children with `key` and `type` [E]; `argument name=` is a deprecated alias of `key` and warns. A reply (ACK, NACK or HANDOFF with `re`) that answers a call carries the call's `tool` and `index` on the root, as an App. F tool result does [E: role `tool` message with `tool` and `index`]; the pair is both-or-neither and only on replies.
+- `doc` [X] (2026-10-01): a document that is not a card (program, plan, summary): root `doc` or `task`, a closed vocabulary of sections, targets (`targets` / `t`), steps (`steps` / `step`) and items (`items` / `item`) listed in part 3, no mandatory sections, no end-of-message marker. An element outside the vocabulary is an error (exit 2), not an advisory warning: a document is read by machines that know only its vocabulary. Clean is exit 0.
 
 ### 1.10 Validation before delivery [X]
 

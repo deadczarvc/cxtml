@@ -19,6 +19,14 @@
   `index`, `argument` with `key` + `type` (`name` = deprecated alias, warns), a reply that answers a call carries its
   `tool` + `index`.
 
+- Profile `doc` (2026-10-01): documents that are not cards (program, plan, summary). Root `doc` or `task`, closed
+  vocabulary owned by the `doc` block of `card-format.json` (an element outside it is exit 2), no mandatory sections, no
+  end-of-message marker; clean is exit 0. Corpus: 3 valid and 5 invalid `doc-*` cards.
+- Text references (rule 1.6.9, 2026-10-01): `&#96;`, `&#126;`, `&#38;` decode in content outside quotes. The codec
+  keeps the plain spelling wherever it reads back (byte-identical to the previous writer) and otherwise writes the
+  escaped spelling, so the text form is total: the 600 hostile generated trees the codec used to refuse in part now
+  round-trip 600 / 600, and `validate.scan` reads every rendered text with the codec's structure.
+
 ## Proposed (not in 1.0)
 
 - Dialect marker: optional root attribute `dialect="cxtml/1.0"`. The `delegation` profile already accepts extra root

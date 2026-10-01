@@ -1,0 +1,34 @@
+{
+ "version": "cXTML/1.0",
+ "profile": "doc",
+ "markers": {
+  "open": "[open]",
+  "sep": "[sep]",
+  "close": "[close]",
+  "end_of_msg": "[end_of_msg]"
+ },
+ "elements": [
+  "doc",
+  "evidence",
+  "invariants",
+  "item",
+  "items",
+  "mission",
+  "note",
+  "section",
+  "step",
+  "steps",
+  "t",
+  "targets",
+  "task"
+ ],
+ "end_of_msg_allowed": false,
+ "text_directly_in_root": false,
+ "max_nest_depth": 3,
+ "name_pattern": "[A-Za-z][A-Za-z0-9._-]*",
+ "roots": [
+  "doc",
+  "task"
+ ],
+ "closed_vocabulary": true
+}

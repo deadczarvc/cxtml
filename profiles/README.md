@@ -7,6 +7,7 @@ never edit them by hand (CI fails on drift). This file only records where each p
 |---|---|---|
 | `kimi` | Kimi K3 App. F chat template (the original XTML) | original element vocabulary, end-of-message marker, nesting up to the depth of App. F Fig. 16 |
 | `delegation` | cXTML extension: task cards handed from one agent to another | mandatory core sections, routing v2 JSON packet, canon-v2 optional sections, executable acceptance, safe report path |
-| `message` | cXTML extension on top of App. F: peer messages between agents | root `message role="other"`, addressing attributes, call / index correlation, deadline for requests |
+| `message` | cXTML extension on top of App. F: peer messages between agents | root `message role="peer"`, addressing attributes, call `tool` + `index`, argument `key` + `type`, deadline for requests |
+| `doc` | cXTML extension: documents that are not cards (program, plan, summary) | root `doc` or `task`, closed vocabulary (outside it = exit 2), no mandatory sections, no end-of-message marker |
 
-Open issue (tracked in CHANGELOG.md): App. F names the argument attributes `key` / `type`; the `message` profile uses `name` / `type`.
+Closed 2026-10-01: `argument` uses `key` / `type` as App. F does; `name` is a deprecated alias (CHANGELOG.md, Proposed: remove it).

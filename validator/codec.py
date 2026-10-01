@@ -12,10 +12,13 @@ writes `[` of a marker spelling inside an attribute value as &#91;. parse strips
 WITHOUT a marker inside is ordinary text, its backticks stay. K3 needs no escaping: control tokens carry structure, text
 segments (allow_special False) carry everything else (encoding_k3.py: _control / _text, _escape_attr_value).
 
-render(doc, "text") re-parses its own output and raises CodecError when the document has no faithful text form (a raw
-backtick run or ~~~ / ``` fence line in marker-free text that would pair with another across structure): the text form
-has lost the channel, K3 has not. Structural validation (vocabulary, profiles) stays in validate.py; this is the one
-parser the tools use for content.
+render(doc, "text") re-parses its own output. When the plain spelling is not faithful (a raw backtick run or ~~~ / ```
+fence line in marker-free text pairs with another across structure, W73 2026-10-01) it falls back to the escaped
+spelling: outside quotes every ` is &#96;, every ~ is &#126;, & is &#38; where it begins one of these three references
+(cXTML/1.0 rule 1.6.9, decoded by parse in all text outside quotes, one left-to-right pass), and each run of marker
+spellings is its own one-backtick quote. No raw backtick or tilde is left to open a literal region, so the escaped
+spelling exists for every AST; the self-check (parse(out) == doc) still guards both spellings and raises CodecError.
+Structural validation (vocabulary, profiles) stays in validate.py; this is the one parser the tools use for content.
 """
 
 from __future__ import annotations
@@ -37,6 +40,9 @@ LITERAL_OPEN = re.compile(r"(?m)^ {0,3}(?P<fence>`{3,}(?=[^`\n]*$)|~{3,})|(?P<ti
 TICKS = re.compile(r"`+")
 BLANK_LINE = re.compile(r"\n[ \t]*\n")
 MARKER_OPENING_BRACKET = re.compile(r"\[(?=(?:open|sep|close|end_of_msg)\])")
+MARKER_RUN = re.compile(r"((?:\[open\]|\[sep\]|\[close\]|\[end_of_msg\])+)")
+TEXT_REF = re.compile(r"&#(96|126|38);")  # rule 1.6.9: text outside quotes; one pass, so &#38;#96; reads as &#96;
+TEXT_REF_AMP = re.compile(r"&(?=#(?:96|126|38);)")
 
 
 class CodecError(ValueError):
@@ -133,6 +139,10 @@ def _literal_end(text: str, lo: re.Match) -> int | None:
     return None
 
 
+def _tdec(s: str) -> str:
+    return TEXT_REF.sub(lambda m: chr(int(m.group(1))), s)
+
+
 def _unquote(region: str, fence: bool) -> str:
     """The text a quote stands for: a code span minus its backtick runs (and one CommonMark pad space), a fence minus its two lines."""
     if fence:
@@ -152,7 +162,7 @@ def _parse_text(text: str) -> Doc:
     i = mark = 0
 
     def gap(upto: int, at: int) -> None:
-        pend.append(text[mark:upto])
+        pend.append(_tdec(text[mark:upto]))
         g = "".join(pend)
         pend.clear()
         if stack:
@@ -172,8 +182,8 @@ def _parse_text(text: str) -> Doc:
                 continue
             region = text[lo.start() : end]
             if MARKER.search(region):
-                pend.append(text[mark : lo.start()])
-                pend.append(_unquote(region, bool(lo.group("fence"))))
+                pend.append(_tdec(text[mark : lo.start()]))
+                pend.append(_unquote(region, bool(lo.group("fence"))))  # quote content: never decoded
                 mark = end
                 warns.append(f"{_pos(text, lo.start())}: reserved marker inside a literal region: text, not markup")
             i = end
@@ -316,13 +326,22 @@ def _text_leaf(s: str) -> str:
     return "".join(p if i % 2 or not MARKER.search(p) else _quote(p) for i, p in enumerate(parts))
 
 
-def _text_el(e: Element, out: list) -> None:
+def _escaped_leaf(s: str) -> str:
+    """Escaped spelling (rule 1.6.9): no raw ` or ~ outside quotes; each marker run is a one-backtick quote."""
+    parts = MARKER_RUN.split(s)
+    return "".join(
+        f"`{p}`" if i % 2 else TEXT_REF_AMP.sub("&#38;", p).replace("`", "&#96;").replace("~", "&#126;")
+        for i, p in enumerate(parts)
+    )
+
+
+def _text_el(e: Element, out: list, escaped: bool = False) -> None:
     out.append(f"{OPEN}{e.name}" + "".join(f' {k}="{_enc(v, True)}"' for k, v in e.attrs) + SEP)
     for c in e.children:
         if isinstance(c, str):
-            out.append(_text_leaf(c))
+            out.append(_escaped_leaf(c) if escaped else _text_leaf(c))
         else:
-            _text_el(c, out)
+            _text_el(c, out, escaped)
     out.append(f"{CLOSE}{e.name}{SEP}")
 
 
@@ -360,17 +379,18 @@ def render(doc, target: str = "text"):
         return out
     if target != "text":
         raise CodecError(f"unknown target {target!r}: text | k3")
-    _text_el(d.root, out)
-    text = "".join(out) + ("\n" + EOM if d.eom else "") + "\n"
-    try:
-        same = _parse_text(text) == d
-    except CodecError as exc:
-        raise CodecError(f"no faithful text form: {exc}") from exc
-    if not same:
-        raise CodecError(
-            "no faithful text form: a backtick run or fence line in marker-free text pairs across structure"
-        )
-    return text
+    why = ""
+    for escaped in (False, True):  # plain spelling first (byte-stable for real cards), escaped spelling as fallback
+        out = []
+        _text_el(d.root, out, escaped)
+        text = "".join(out) + ("\n" + EOM if d.eom else "") + "\n"
+        try:
+            if _parse_text(text) == d:
+                return text
+            why = "the re-parsed text differs from the AST"
+        except CodecError as exc:
+            why = str(exc)
+    raise CodecError(f"no faithful text form (plain and escaped spellings both fail the self-check): {why}")
 
 
 def main(argv: list[str]) -> int:

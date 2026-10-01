@@ -4,6 +4,8 @@
     python tools/sync_validator.py                                   # mirror vs SOURCE.lock (CI)
     python tools/sync_validator.py --canon DIR --map FILE            # + drift vs upstream, logic identity
     python tools/sync_validator.py --canon DIR --map FILE --update   # resync mirror + lock, then check
+    python tools/sync_validator.py --canon DIR --map FILE --push --backup-suffix .bak-X [--also DIR ...]
+                                                                     # repo -> upstream (+ flat copies), then check
 
 The upstream validator is maintained outside this repository. Its comments and docstrings name
 machine-local paths, so the mirror is the upstream bytes after a private, deterministic
@@ -15,6 +17,13 @@ substitution map (kept outside the repository). What is proven, not assumed:
   4. logic identity: Python AST with docstrings removed is equal; JSON is equal once the
      human-only keys "why" and "notes" are dropped             (--canon; the map may touch prose only)
 
+--push (W73 2026-10-01) is the other direction, for a change made and tested in this repository: it writes each
+changed mirror file over its upstream file and over the same-named file in every --also directory (flat copies such as
+a skill's scripts/), after a backup <file><suffix> of every file it replaces, then rewrites the lock and runs the full
+check. It refuses, writing nothing, when the map would rewrite a mirror file (upstream would not be a plain copy), when
+an upstream file drifted since the last sync (lock sha; a file new to the lock is compared with the mirror at git HEAD),
+or when a copy differs from its upstream file (someone else's change).
+
 exit 0 in sync · 1 drift or mismatch (the reason is printed)
 """
 
@@ -24,6 +33,7 @@ import argparse
 import ast
 import hashlib
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -36,12 +46,56 @@ UPSTREAM = {
     "cmdcheck.py": "tools/cmdcheck.py",
     "card-format.json": "config/card-format.json",
     "codec.py": "tools/xtml/codec.py",
+    "test_codec.py": "tools/xtml/tests/test_codec.py",  # W73: the codec's tests travel with it
 }
+MIRROR_AT = {"test_codec.py": ROOT / "tests" / "test_codec.py"}  # default: MIRROR / name
 PROSE_KEYS = {"why", "notes"}
 
 
 def sha(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
+
+
+def mpath(name: str) -> Path:
+    return MIRROR_AT.get(name, MIRROR / name)
+
+
+def _head(path: Path) -> bytes:
+    rel = path.relative_to(ROOT).as_posix()
+    return subprocess.run(["git", "-C", str(ROOT), "show", f"HEAD:{rel}"], capture_output=True, check=True).stdout
+
+
+def push(canon: Path, rules: dict, also: list[Path], suffix: str) -> list[str]:
+    """Mirror -> upstream (+ flat copies). Returns refusals; writes nothing unless there are none."""
+    lock = json.loads(LOCK.read_text(encoding="utf-8"))
+    bad, plan = [], []
+    for n, rel in UPSTREAM.items():
+        new, target = mpath(n).read_bytes(), canon / rel
+        if sanitize(n, new, rules) != new:
+            bad.append(f"PUSH {n}: the map rewrites the mirror, so upstream is not a plain copy of it")
+            continue
+        old = target.read_bytes()
+        base = lock["upstream_sha256"].get(n) or sha(_head(mpath(n)))
+        if sha(old) != base:
+            bad.append(f"PUSH {n}: upstream drifted since the last sync — run --update and merge first")
+            continue
+        if old != new:
+            plan.append((target, old, new))
+        for d in also:
+            c = d / n
+            if c.is_file() and c.read_bytes() != new:
+                if c.read_bytes() != old:
+                    bad.append(f"PUSH {n}: copy {c} differs from its upstream file")
+                plan.append((c, c.read_bytes(), new))
+    if bad:
+        return bad
+    for path, old, new in plan:
+        bak = path.with_name(path.name + suffix)
+        if not bak.exists():
+            bak.write_bytes(old)
+        path.write_bytes(new)
+        print(f"pushed {path} (backup {bak.name})")
+    return []
 
 
 def sanitize(name: str, data: bytes, rules: dict) -> bytes:
@@ -85,22 +139,35 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--canon", type=Path, help="root of the upstream ops tree")
     ap.add_argument("--map", type=Path, help="private substitution map (JSON), outside the repo")
     ap.add_argument("--update", action="store_true", help="rewrite mirror + lock from upstream")
+    ap.add_argument("--push", action="store_true", help="write the mirror over upstream (+ --also copies), then lock")
+    ap.add_argument("--also", type=Path, action="append", default=[], help="directory of flat copies (with --push)")
+    ap.add_argument("--backup-suffix", help="backup suffix for every file --push replaces (required with --push)")
     a = ap.parse_args(argv)
-    if (a.canon is None) != (a.map is None) or (a.update and a.canon is None):
-        ap.error("--canon and --map go together; --update needs both")
+    if (a.canon is None) != (a.map is None) or ((a.update or a.push) and a.canon is None):
+        ap.error("--canon and --map go together; --update / --push need both")
+    if a.push and (a.update or not a.backup_suffix):
+        ap.error("--push needs --backup-suffix and excludes --update")
 
     bad: list[str] = []
     if a.canon:
         rules = json.loads(a.map.read_text(encoding="utf-8"))
+        if a.push:
+            refused = push(a.canon, rules, a.also, a.backup_suffix)
+            for line in refused:
+                print(line, file=sys.stderr)
+            if refused:
+                print("validator mirror: push refused, nothing written")
+                return 1
         up = {n: (a.canon / p).read_bytes() for n, p in UPSTREAM.items()}
         if a.update:
             for n, b in up.items():
-                (MIRROR / n).write_bytes(sanitize(n, b, rules))
+                mpath(n).write_bytes(sanitize(n, b, rules))
+        if a.update or a.push:
             LOCK.write_text(
                 json.dumps(
                     {
                         "upstream_sha256": {n: sha(b) for n, b in up.items()},
-                        "mirror_sha256": {n: sha((MIRROR / n).read_bytes()) for n in UPSTREAM},
+                        "mirror_sha256": {n: sha(mpath(n).read_bytes()) for n in UPSTREAM},
                         "map_sha256": sha(a.map.read_bytes()),
                     },
                     indent=1,
@@ -111,16 +178,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         lock = json.loads(LOCK.read_text(encoding="utf-8"))
         for n, b in up.items():
-            if sha(b) != lock["upstream_sha256"][n]:
+            if sha(b) != lock["upstream_sha256"].get(n):
                 bad.append(f"DRIFT {n}: upstream changed since the last sync — rerun with --update")
-            mirror = (MIRROR / n).read_bytes()
+            mirror = mpath(n).read_bytes()
             if sanitize(n, b, rules) != mirror:
                 bad.append(f"MISMATCH {n}: map(upstream) differs from the mirror")
             if logic_view(n, b) != logic_view(n, sanitize(n, b, rules)):
                 bad.append(f"LOGIC {n}: the substitution map touched code, not only prose")
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
     for n in UPSTREAM:
-        if sha((MIRROR / n).read_bytes()) != lock["mirror_sha256"][n]:
+        if sha(mpath(n).read_bytes()) != lock["mirror_sha256"].get(n):
             bad.append(f"EDITED {n}: mirror bytes differ from SOURCE.lock — never edit the mirror by hand")
 
     for line in bad:

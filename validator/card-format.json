@@ -155,5 +155,25 @@
     "CONFLICT"
    ]
   }
+ },
+ "doc": {
+  "why": "W73 2026-10-01 (X11.1): документ (программа, план, сводка), ¬ постановка ∧ ¬ сообщение: грамматика + закрытый словарь документа, без ядра карточки. Корень doc | task; разделы, цели (targets / t), шаги (steps / step), пункты (items / item). Тег вне словаря — отказ (код 2): документ читает машина. Потребители: tools/xtml/validate.py (profile doc), генератор документов программы (program.py validate()).",
+  "roots": [
+   "doc",
+   "task"
+  ],
+  "elements": [
+   "evidence",
+   "invariants",
+   "item",
+   "items",
+   "mission",
+   "note",
+   "section",
+   "step",
+   "steps",
+   "t",
+   "targets"
+  ]
  }
 }

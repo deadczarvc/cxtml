@@ -1,0 +1,24 @@
+[open]task id="PROGRAM decision-layer mathematics" progress="3/4"[sep]
+[open]mission[sep]
+Put every choice among options on explicit mathematics.
+[close]mission[sep]
+[open]invariants[sep]
+- no number without an interval
+[close]invariants[sep]
+[open]targets[sep]
+[open]t id="X1" progress="2/2" doc="items/X1.xtml"[sep]
+intervals and anytime-valid evidence
+[close]t[sep]
+[open]t id="X2" progress="1/2" doc="items/X2.xtml"[sep]
+aggregation without ground truth
+[close]t[sep]
+[close]targets[sep]
+[open]steps[sep]
+[open]step id="X1.1" status="done" item="X1"[sep]
+evidence: test_intervals.py 12/12
+[close]step[sep]
+[open]step id="X2.1" status="planned" item="X2"[sep]
+Dawid-Skene over label voters
+[close]step[sep]
+[close]steps[sep]
+[close]task[sep]

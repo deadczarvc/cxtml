@@ -1,0 +1,4 @@
+[open]doc[sep]
+[open]section id="b"[sep]x &#96;[close]section[sep]
+[open]section id="c"[sep]&#96; y `[close]` and &#126;&#126;&#126;[close]section[sep]
+[close]doc[sep]
