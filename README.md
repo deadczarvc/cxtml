@@ -4,10 +4,20 @@ cXTML is a dialect of **XTML**, the markup of the Kimi K3 chat template, for mul
 
 ## Origin and credit
 
-XTML is Moonshot AI's work: Kimi K3 technical report, arXiv 2607.24653, Appendix F, and the reference encoder
-`encoding_k3.py` published with the Kimi K3 weights. XTML replaces the angle brackets of XML with reserved special
-tokens (open, separator, close) plus an end-of-message stop marker, so every structural boundary is one token.
-All credit for the notation belongs there. This repository does not redefine XTML; it pins down a dialect.
+XTML (eXtensible Token Markup Language) is the work of Moonshot AI and the Kimi Team, the markup of the Kimi K3 chat
+template:
+
+- the Kimi K3 technical report, *Kimi K3: Open Frontier Intelligence*, arXiv
+  [2607.24653](https://arxiv.org/abs/2607.24653), Appendix F;
+- the reference encoder [`encoding_k3.py`](https://huggingface.co/moonshotai/Kimi-K3/blob/main/encoding_k3.py),
+  published with the Kimi K3 weights ([moonshotai/Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3) on Hugging Face);
+- Moonshot AI on GitHub: [MoonshotAI](https://github.com/MoonshotAI),
+  [MoonshotAI/Kimi-K3](https://github.com/MoonshotAI/Kimi-K3).
+
+XTML replaces the angle brackets of XML with reserved special tokens (open, separator, close) plus an end-of-message
+stop marker, so every structural boundary is one token. All credit for the notation belongs there. This repository
+does not redefine XTML; it pins down a dialect. `encoding_k3.py` is not redistributed here: the codec tests compare
+against it when you point `XTML_ENCODING_K3` at a copy.
 
 ## What cXTML adds
 
@@ -52,5 +62,5 @@ The reference validator is maintained in Russian; its diagnostics are Russian, a
 
 ## Status
 
-cXTML/1.0, unreleased. Licenses are a DEFAULT pending the owner's decision: Apache-2.0 for code, CC-BY-4.0 for the
+cXTML/1.0, released 2026-10-03 as `v1.0.0`. Licenses are a DEFAULT pending the owner's decision: Apache-2.0 for code, CC-BY-4.0 for the
 specification text (see `LICENSE`).

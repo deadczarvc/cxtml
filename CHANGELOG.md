@@ -1,6 +1,6 @@
 # Changelog
 
-## cXTML/1.0 (unreleased, 2026-10-01)
+## cXTML/1.0 (2026-10-03, `v1.0.0`)
 
 - Rules and ABNF for the text form, each rule marked App. F, reference encoder, or cXTML extension.
 - Two surface forms of the markers (bracket text form, K3 control tokens) and the bijection between them.
@@ -22,6 +22,9 @@
 - Profile `doc` (2026-10-01): documents that are not cards (program, plan, summary). Root `doc` or `task`, closed
   vocabulary owned by the `doc` block of `card-format.json` (an element outside it is exit 2), no mandatory sections, no
   end-of-message marker; clean is exit 0. Corpus: 3 valid and 5 invalid `doc-*` cards.
+- Profile `doc` (2026-10-03, additive): root `handoff` and nine elements for track handoffs (`done-this-wave`,
+  `git-blocker`, `handoff`, `next-action`, `peers`, `remaining`, `status`, `track-dir`, `verify`); the vocabulary
+  moved to the validator's module `vocab.py`.
 - Text references (rule 1.6.9, 2026-10-01): `&#96;`, `&#126;`, `&#38;` decode in content outside quotes. The codec
   keeps the plain spelling wherever it reads back (byte-identical to the previous writer) and otherwise writes the
   escaped spelling, so the text form is total: the 600 hostile generated trees the codec used to refuse in part now
