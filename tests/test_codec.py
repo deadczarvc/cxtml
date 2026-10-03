@@ -4,7 +4,7 @@
 
 Locations are found relative to this file: codec.py and validate.py sit next to tests/ (ops tree) or in validator/ (repo).
 The corpus comes from <repo>/corpus (repo layout) or env CXTML_REPO. encoding_k3.py (Moonshot, not redistributed here)
-comes from env XTML_ENCODING_K3 or ~/xtml-research/refs/encoding_k3.py; a missing input skips its tests, never passes them.
+comes from env XTML_ENCODING_K3 (a copy of huggingface.co/moonshotai/Kimi-K3 encoding_k3.py); a missing input skips its tests, never passes them.
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ def load(path: Path, name: str):
 
 
 VALIDATE = load(BASE / "validate.py", "cxtml_validate_for_codec")
-K3_PATH = Path(os.environ.get("XTML_ENCODING_K3") or Path.home() / "xtml-research" / "refs" / "encoding_k3.py")
+K3_PATH = Path(os.environ.get("XTML_ENCODING_K3", ""))  # unset: Path("") is not a file, the K3 tests skip
 CARDS = (
     sorted(p for d in ("corpus/valid", "corpus/invalid", "examples") for p in (REPO / d).glob("*.xtml"))
     if REPO.is_dir()

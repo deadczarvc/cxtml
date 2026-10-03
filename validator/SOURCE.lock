@@ -4,9 +4,9 @@
   "card-format.json": "1febb65aedcfa9956986369561940c01eceb26a95afb9734b9069d52d490ab0e",
   "cmdcheck.py": "5b28b391ac03dda51cb2cd2ab603186fefe30660a5785b0c2b0ded10d7c3f14b",
   "codec.py": "93470a9b43630edd175e956280bf612170f1c51e0153bd0e383675afb6bf18c6",
-  "test_codec.py": "35da3ee142d9b0a0c0564bcf6a13090c4e21fff2ac80a9ccc42b1692d43e4d4c",
+  "test_codec.py": "37e7036e8905a0786ec75b1d058e2883e6b2277f3aa3ca5aac4f3dc34f54023d",
   "validate.py": "ed24beb3e048b1b92d6f31d8942cdb5c4f1c1a79536c553f57d7cd29da3deab9",
-  "vocab.py": "1d0817bab12bc0e8dd1192b81b58f972b39516c56b29a36b039746064081988e"
+  "vocab.py": "2c509146dec67ed607848fd6f92bebe8bb0dbb04a39f2a79128f63395f034422"
  },
  "upstream_sha256": {
   "card-format.json": "1febb65aedcfa9956986369561940c01eceb26a95afb9734b9069d52d490ab0e",

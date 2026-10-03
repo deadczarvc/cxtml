@@ -227,7 +227,7 @@ MAN = (
         "`[open]escalate[sep]Сьюта красная ∧ ¬ чинится ⇒ откат ∧ доклад.[close]escalate[sep]`"),
     Man("delegation", "peer", "кто ещё работает рядом и над чем",
         "рядом живые сессии ∨ чужие lock'и; один сосед (список соседей документа — peers профиля doc).", "нет.",
-        "`[open]peer[sep]claude:2c106ff1 — git-resync ~/.claude.[close]peer[sep]`"),
+        "`[open]peer[sep]claude:a1b2c3d4 — git-resync <config-repo>.[close]peer[sep]`"),
     Man("delegation", "sync", "что передать соседям по контуру и когда",
         "результат меняет то, на что опираются соседи.", "нет.",
         "`[open]sync[sep]После правки validate.py — владельцу cxtml команда resync.[close]sync[sep]`"),
@@ -323,7 +323,7 @@ MAN = (
         "трек живёт дольше одной сессии ∧ следующий исполнитель продолжает без контекста. ¬ поручение: работа "
         "делегату = `task` профиля delegation.",
         "`id` — slug трека; `ts` — ISO-дата среза; `from` — actor `agent:sid`, писавший срез.",
-        '`[open]handoff id="md-truth-tails-c" ts="2026-10-02" from="claude:bf016fd3"[sep]…[close]handoff[sep]`'),
+        '`[open]handoff id="docs-sync" ts="2026-10-02" from="claude:a1b2c3d4"[sep]…[close]handoff[sep]`'),
     Man("doc", "task",
         "корень документа-программы (программа, план с целями ∧ шагами); форма карточки без её ядра.",
         "документы генератора программы (`program.py validate()`). ⛔ Профиль doc ядро ¬ проверяет: поручение "
@@ -367,7 +367,7 @@ MAN = (
         "соседи по контуру — кто (actor `agent:sid`) ∧ над чем работает ∧ чего от него ждать.",
         "в `handoff`, если рядом живые сессии ∨ чужие lock'и. ¬ путать с `peer` профиля delegation (один сосед в "
         "карточке).", "нет; одна строка на соседа.",
-        "`[open]peers[sep]claude:2c106ff1 — ведёт git-resync ~/.claude; ждать «done».[close]peers[sep]`"),
+        "`[open]peers[sep]claude:a1b2c3d4 — ведёт git-resync <config-repo>; ждать «done».[close]peers[sep]`"),
     Man("doc", "remaining",
         "один открытый (∨ закрытый в этом срезе) хвост трека.",
         "в `handoff`, по элементу на хвост; повтор тега законен (валидатор предупреждает «встречается дважды»).",
