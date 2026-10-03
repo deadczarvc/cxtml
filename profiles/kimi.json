@@ -1,0 +1,22 @@
+{
+ "version": "cXTML/1.0",
+ "profile": "kimi",
+ "markers": {
+  "open": "[open]",
+  "sep": "[sep]",
+  "close": "[close]",
+  "end_of_msg": "[end_of_msg]"
+ },
+ "elements": [
+  "argument",
+  "call",
+  "message",
+  "response",
+  "think",
+  "tools"
+ ],
+ "end_of_msg_allowed": true,
+ "text_directly_in_root": true,
+ "max_nest_depth": 4,
+ "name_pattern": "[A-Za-z][A-Za-z0-9._-]*"
+}

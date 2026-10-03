@@ -1,0 +1,8 @@
+[open]task id="looks like a card"[sep]
+[open]mission[sep]
+One task.
+[close]mission[sep]
+[open]acceptance[sep]
+python -B check.py
+[close]acceptance[sep]
+[close]task[sep]

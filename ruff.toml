@@ -1,0 +1,2 @@
+line-length = 120
+extend-exclude = ["validator"]  # byte-exact mirror of upstream: never reformat, never lint-fix

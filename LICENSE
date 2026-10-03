@@ -1,0 +1,12 @@
+DEFAULT LICENSING, PENDING THE OWNER'S DECISION
+
+Code (tools/, tests/, validator/):          SPDX-License-Identifier: Apache-2.0
+Specification text (spec/, grammar/, profiles/, README.md, CHANGELOG.md, corpus/, examples/):
+                                            SPDX-License-Identifier: CC-BY-4.0
+
+Full license texts, to be added verbatim before any publication:
+  https://www.apache.org/licenses/LICENSE-2.0.txt
+  https://creativecommons.org/licenses/by/4.0/legalcode.txt
+
+The XTML notation itself originates in the Kimi K3 technical report (arXiv 2607.24653, Appendix F) and the
+reference encoder encoding_k3.py by Moonshot AI; those works remain under their own terms.

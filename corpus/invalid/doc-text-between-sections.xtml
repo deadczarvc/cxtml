@@ -1,0 +1,6 @@
+[open]doc[sep]
+[open]section[sep]
+in a section
+[close]section[sep]
+loose text outside every section
+[close]doc[sep]

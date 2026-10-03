@@ -1,0 +1,26 @@
+[open]task id="card real-43"[sep]
+[open]routing[sep]
+{"phase": "diagnose", "role": "llm-serving-diagnostician", "risk": "elevated", "scope": "cross_system", "contract": "clear", "evidence": ["neutralized evidence 1"], "acceptance": "python -m unittest discover tests", "escalations": 0, "failure": "none", "localized": true, "mechanical": false, "previous_tier": null, "specialist": "llm-serving-diagnostician"}
+[close]routing[sep]
+[open]mission[sep]
+Neutralized mission text.
+[close]mission[sep]
+[open]invariants[sep]
+Neutralized invariants text.
+[close]invariants[sep]
+[open]source-of-truth[sep]
+Neutralized source-of-truth text.
+[close]source-of-truth[sep]
+[open]acceptance[sep]
+python tools/check_report reports/real-43.md
+[close]acceptance[sep]
+[open]write-scope[sep]
+Only reports/ and scratch/real-43/.
+[close]write-scope[sep]
+[open]stop-conditions[sep]
+Neutralized stop-conditions text.
+[close]stop-conditions[sep]
+[open]report-path[sep]
+reports/real-43.md
+[close]report-path[sep]
+[close]task[sep]

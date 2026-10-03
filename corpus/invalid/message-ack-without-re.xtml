@@ -1,0 +1,8 @@
+[open]message role="peer" id="m1" from="claude:s1" to="codex:s2" type="ACK" re="none"[sep]
+[open]subject[sep]Lock request for src/app.py[close]subject[sep]
+[open]body[sep]Please release src/app.py after your edit.[close]body[sep]
+[open]evidence[sep]lease table shows your lease on src/app.py[close]evidence[sep]
+[open]needs[sep]release or an ETA[close]needs[sep]
+[open]until[sep]none[close]until[sep]
+[close]message[sep]
+[end_of_msg]

@@ -1,0 +1,174 @@
+{
+ "_generated_from": "tools/xtml/vocab.py",
+ "schema": "card-format/v1",
+ "sections": {
+  "mandatory": [
+   "task",
+   "mission",
+   "invariants",
+   "source-of-truth",
+   "acceptance",
+   "write-scope",
+   "stop-conditions",
+   "report-path"
+  ],
+  "known_extra": [
+   "routing",
+   "role",
+   "capability-requirements",
+   "steps",
+   "handoff",
+   "context",
+   "note",
+   "constraints",
+   "reporting-contract",
+   "forbid",
+   "design-options",
+   "architecture-decision"
+  ],
+  "enforced_count": {
+   "routing": 1
+  }
+ },
+ "capability_keys": [
+  "terminal",
+  "vision",
+  "reasoning",
+  "long-context",
+  "mechanical"
+ ],
+ "matrix_flags": [
+  "vision",
+  "reasoning",
+  "mechanical"
+ ],
+ "routing_fields": [
+  "phase",
+  "role",
+  "risk",
+  "scope",
+  "contract",
+  "evidence",
+  "acceptance",
+  "localized",
+  "mechanical",
+  "failure",
+  "previous_tier",
+  "escalations",
+  "specialist"
+ ],
+ "routing_optional": [
+  "requirements"
+ ],
+ "phases": [
+  "collect",
+  "diagnose",
+  "implement",
+  "verify",
+  "arbitrate"
+ ],
+ "loop_classes": [
+  "one-shot",
+  "continuable",
+  "ralph-round"
+ ],
+ "message": {
+  "root": "message",
+  "role": "peer",
+  "attrs": [
+   "role",
+   "id",
+   "from",
+   "to",
+   "type",
+   "re"
+  ],
+  "optional_attrs": [
+   "tool",
+   "index"
+  ],
+  "types": [
+   "REQ",
+   "ACK",
+   "NACK",
+   "INFO",
+   "CLAIM",
+   "CONFLICT",
+   "HANDOFF",
+   "ESCALATE"
+  ],
+  "sections": [
+   "subject",
+   "body",
+   "evidence",
+   "needs",
+   "until"
+  ],
+  "until_required": [
+   "REQ",
+   "CLAIM",
+   "CONFLICT"
+  ],
+  "needs_none_ok": [
+   "INFO",
+   "ACK"
+  ],
+  "re_required": [
+   "ACK",
+   "NACK"
+  ],
+  "closing_types": [
+   "ACK",
+   "NACK",
+   "HANDOFF"
+  ],
+  "call": {
+   "tag": "call",
+   "attrs": [
+    "tool",
+    "index"
+   ],
+   "argument": "argument",
+   "argument_attrs": [
+    "key",
+    "type"
+   ],
+   "argument_alias": {
+    "name": "key"
+   },
+   "types": [
+    "REQ",
+    "CLAIM",
+    "CONFLICT"
+   ]
+  }
+ },
+ "doc": {
+  "roots": [
+   "doc",
+   "handoff",
+   "task"
+  ],
+  "elements": [
+   "done-this-wave",
+   "evidence",
+   "git-blocker",
+   "invariants",
+   "item",
+   "items",
+   "mission",
+   "next-action",
+   "note",
+   "peers",
+   "remaining",
+   "section",
+   "status",
+   "step",
+   "steps",
+   "t",
+   "targets",
+   "track-dir",
+   "verify"
+  ]
+ }
+}

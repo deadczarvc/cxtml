@@ -1,0 +1,26 @@
+[open]task id="card real-78"[sep]
+[open]routing[sep]
+{"phase": "implement", "role": "search-relevance-engineer", "risk": "elevated", "scope": "local", "contract": "clear", "evidence": ["neutralized evidence 1", "neutralized evidence 2", "neutralized evidence 3", "neutralized evidence 4"], "acceptance": "python -m unittest discover tests", "escalations": 0, "failure": "none", "localized": true, "mechanical": false, "previous_tier": null, "specialist": "search-relevance-engineer"}
+[close]routing[sep]
+[open]mission[sep]
+Neutralized mission text.
+[close]mission[sep]
+[open]invariants[sep]
+Neutralized invariants text.
+[close]invariants[sep]
+[open]source-of-truth[sep]
+Neutralized source-of-truth text.
+[close]source-of-truth[sep]
+[open]acceptance[sep]
+python tools/check_report reports/real-78.md
+[close]acceptance[sep]
+[open]write-scope[sep]
+Only reports/ and scratch/real-78/.
+[close]write-scope[sep]
+[open]stop-conditions[sep]
+Neutralized stop-conditions text.
+[close]stop-conditions[sep]
+[open]report-path[sep]
+reports/real-78.md
+[close]report-path[sep]
+[close]task[sep]

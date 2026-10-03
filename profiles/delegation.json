@@ -1,0 +1,145 @@
+{
+ "version": "cXTML/1.0",
+ "profile": "delegation",
+ "markers": {
+  "open": "[open]",
+  "sep": "[sep]",
+  "close": "[close]",
+  "end_of_msg": "[end_of_msg]"
+ },
+ "elements": [
+  "acceptance",
+  "budget",
+  "channel",
+  "constraints",
+  "context",
+  "counter-example",
+  "depends-on",
+  "deviation",
+  "escalate",
+  "evidence",
+  "forbid",
+  "handoff",
+  "input",
+  "invariants",
+  "mission",
+  "note",
+  "peer",
+  "prior",
+  "q",
+  "queries",
+  "report-path",
+  "require",
+  "response-format",
+  "role",
+  "routing",
+  "source-of-truth",
+  "step",
+  "steps",
+  "stop-conditions",
+  "sync",
+  "t",
+  "targets",
+  "task",
+  "timebox",
+  "write-scope"
+ ],
+ "end_of_msg_allowed": false,
+ "text_directly_in_root": false,
+ "max_nest_depth": 3,
+ "name_pattern": "[A-Za-z][A-Za-z0-9._-]*",
+ "mandatory_sections": [
+  "task",
+  "mission",
+  "invariants",
+  "source-of-truth",
+  "acceptance",
+  "write-scope",
+  "stop-conditions",
+  "report-path"
+ ],
+ "v2_sections": [
+  "capability-requirements",
+  "context-budget",
+  "loop-class",
+  "report-schema",
+  "seed-policy"
+ ],
+ "loop_classes": [
+  "one-shot",
+  "continuable",
+  "ralph-round"
+ ],
+ "capability_keys": [
+  "terminal",
+  "vision",
+  "reasoning",
+  "long-context",
+  "mechanical"
+ ],
+ "context_budget_keys": [
+  "max-input-tokens",
+  "report-inline-max"
+ ],
+ "seed_policies": [
+  "none",
+  "context-inline"
+ ],
+ "verdict_marker": "VERDICT",
+ "routing": {
+  "fields": [
+   "phase",
+   "role",
+   "risk",
+   "scope",
+   "contract",
+   "evidence",
+   "acceptance",
+   "localized",
+   "mechanical",
+   "failure",
+   "previous_tier",
+   "escalations",
+   "specialist"
+  ],
+  "optional": [
+   "requirements"
+  ],
+  "enums": {
+   "phase": [
+    "arbitrate",
+    "collect",
+    "diagnose",
+    "implement",
+    "verify"
+   ],
+   "risk": [
+    "critical",
+    "elevated",
+    "low",
+    "unknown"
+   ],
+   "scope": [
+    "cross_system",
+    "local",
+    "unknown"
+   ],
+   "contract": [
+    "ambiguous",
+    "clear",
+    "unknown"
+   ],
+   "failure": [
+    "infrastructure",
+    "none",
+    "quality"
+   ]
+  },
+  "previous_tier": [
+   "astra",
+   "luna",
+   "sol",
+   "terra"
+  ]
+ }
+}

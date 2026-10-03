@@ -1,0 +1,19 @@
+[open]doc id="summary"[sep]
+[open]section id="scope"[sep]
+What this summary covers.
+[close]section[sep]
+[open]items[sep]
+[open]item id="a"[sep]
+first finding
+[close]item[sep]
+[open]item id="b"[sep]
+second finding
+[close]item[sep]
+[close]items[sep]
+[open]evidence[sep]
+- run log, two passes
+[close]evidence[sep]
+[open]note[sep]
+no outward publishing
+[close]note[sep]
+[close]doc[sep]

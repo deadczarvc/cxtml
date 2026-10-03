@@ -1,0 +1,26 @@
+[open]task id="base"[sep]
+[open]routing[sep]
+{"escalations": 0, "failure": "none", "localized": false, "mechanical": false, "previous_tier": null, "contract": "clear", "scope": "local", "phase": "implement", "role": "engineer", "risk": "low", "evidence": ["design note section 2"], "acceptance": "python -m unittest discover tests", "specialist": null}
+[close]routing[sep]
+[open]mission[sep]
+Implement the parser change described in the design note and report what changed.
+[close]mission[sep]
+[open]invariants[sep]
+Public interfaces stay backward compatible.
+[close]invariants[sep]
+[open]source-of-truth[sep]
+docs/design.md; src/parser/
+[close]source-of-truth[sep]
+[open]acceptance[sep]
+python -m unittest discover tests
+[close]acceptance[sep]
+[open]write-scope[sep]
+Only src/parser/ and reports/.
+[close]write-scope[sep]
+[open]stop-conditions[sep]
+A test outside the write-scope fails: stop and report.
+[close]stop-conditions[sep]
+[open]report-path[sep]
+../reports/x.md
+[close]report-path[sep]
+[close]task[sep]
