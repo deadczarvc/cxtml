@@ -47,6 +47,7 @@ UPSTREAM = {
     "card-format.json": "config/card-format.json",
     "codec.py": "tools/xtml/codec.py",
     "test_codec.py": "tools/xtml/tests/test_codec.py",  # W73: the codec's tests travel with it
+    "vocab.py": "tools/xtml/vocab.py",  # R11: validate.py imports the vocabulary module
 }
 MIRROR_AT = {"test_codec.py": ROOT / "tests" / "test_codec.py"}  # default: MIRROR / name
 PROSE_KEYS = {"why", "notes"}

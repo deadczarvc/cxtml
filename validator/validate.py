@@ -7,6 +7,7 @@
     python validate.py <file> --profile message  # peer message card agent<->agent (W65, peer-bus)
     python validate.py <file> --profile doc      # document (program, plan): grammar + closed vocabulary, no card core
     python validate.py -                       # read the prompt from stdin
+    python validate.py --man [tag] [--profile p] # man article of a tag (no tag: the index); source — vocab.py
 
     exit 0  clean
     exit 1  vocabulary complaint only (unknown tags, and --strict was asked for)
@@ -52,7 +53,6 @@ WHO CALLS THIS, INCLUDING FROM OUTSIDE THIS CONTOUR
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from pathlib import Path, PureWindowsPath
@@ -72,28 +72,10 @@ except ImportError:  # pragma: no cover - проверяется отдельн�
 
 OPEN, SEP, CLOSE, EOM = "[open]", "[sep]", "[close]", "[end_of_msg]"
 
-VOCAB = {
-    "kimi": {"message", "think", "response", "tools", "call", "argument"},
-    "delegation": {
-        # Обязательное ядро. Каждый закрывает документированный провал делегирования и
-        # совпадает по смыслу с REQUIRED в tools/delegate/validate-card.py.
-        "task", "mission", "invariants", "source-of-truth", "acceptance",
-        "write-scope", "stop-conditions", "report-path",
-        # Остальное — по надобности.
-        "role", "context", "input", "constraints", "forbid", "require",
-        "response-format", "queries", "q", "targets", "t", "steps", "step",
-        "note", "handoff", "budget", "routing",  # routing JSON: strict 13-field check here (_routing_complaint); evidence_router picks the tier.
-        "prior", "channel", "deviation", "counter-example", "escalate", "peer", "sync", "depends-on", "evidence", "timebox",
-    },
-}
-
-# ⛔ Канон v2 §4 добавляет пять опциональных разделов (loop-class, capability-requirements,
-# context-budget, report-schema, seed-policy), но в VOCAB им НЕ место: словарь профиля сверен
-# check_vocab_sync.py с SKILL.md скилла в обе стороны, а SKILL.md — собственность
-# пользователя и этой волной не меняется. Разделы объявлены отдельно в V2_SECTIONS ниже;
-# профиль постановки передаёт их сканеру как известные теги, иначе каждая законная
-# карточка v2 получала бы пять ложных предупреждений «вне словаря», а под --strict —
-# отказ на каноничной форме.
+# Словарь профилей (VOCAB, MANDATORY, MSG, DOC, словари значений) и man каждого тега живут ТОЛЬКО в vocab.py рядом
+# (R11-I 2026-10-02, user: man в md — «кащунство», json тоже запрещён). Здесь ни одного списка тегов — только логика.
+# Пять разделов канона v2 §4 (V2_SECTIONS ниже) — вне VOCAB, как и прежде: профиль постановки передаёт их сканеру
+# известными тегами, иначе законная карточка v2 получала бы пять ложных предупреждений «вне словаря».
 
 # [end_of_msg] is a layer-T generation stop marker. Inside a K3 chat template it belongs;
 # inside a delegation card written as plain text it is the one construct that would change
@@ -115,17 +97,7 @@ KIMI_NEST_DEPTH = 4
 # карточка из одного note, приёмка прозой, документ без корня — получали код 0. Проверка,
 # зелёная на такой карточке, читается как «карточка годная», а означает «скобки сошлись».
 # Состав ядра сведён с REQUIRED в tools/delegate/validate-card.py: там те же провалы
-# делегирования закрыты для внешнего контура.
-MANDATORY = {
-    "task": "корень: без него это не карточка",
-    "mission": "единственная задача; без неё делегат выберет её сам",
-    "invariants": "что обязано остаться правдой; голая цель решается занулением",
-    "source-of-truth": "факты и пути; без них «не нашёл» неотличимо от «не искал»",
-    "acceptance": "команда приёмки; единственное место, где отчёт опровержим",
-    "write-scope": "границы записи; делает «не тронул» проверяемым",
-    "stop-conditions": "когда доложить, а не дожимать любой ценой",
-    "report-path": "куда класть результат",
-}
+# делегирования закрыты для внешнего контура. Само ядро (MANDATORY: тег -> причина в отказе) — vocab.py.
 # Приёмка обязана быть исполнимой. Само правило живёт в tools/cmdcheck.py: тот же вопрос
 # задаёт генератор пояснительной записки, и две копии одного правила разошлись молча —
 # здесь оно судило префиксом и принимало «github» под «git», там подстрокой и принимало
@@ -134,6 +106,16 @@ MANDATORY = {
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import cmdcheck  # noqa: E402
+
+try:
+    import vocab  # noqa: E402
+except Exception as _exc:  # ¬ только ImportError: vocab.py бросает VocabError, когда противоречит сам себе
+    # Код 2, а не трассировка (её код 1 = «словарная жалоба», хук пропустил бы карточку): словаря нет — судить нечем.
+    print(f"ОШИБКА: словарь vocab.py негоден ({type(_exc).__name__}: {_exc}) — отказ инструмента, "
+          "карточку по нему проверенной считать нельзя", file=sys.stderr)
+    sys.exit(2)
+VOCAB = {p: set(tags) for p, tags in vocab.VOCAB.items()}
+MANDATORY = vocab.MANDATORY
 
 # ASCII by construction — NOT \w, which this module treats as Unicode. A tag written
 # "rоle" with a Cyrillic "о" is pixel-identical to "role"; with \w it parses, and if both
@@ -363,70 +345,18 @@ def _is_command(text: str) -> bool:
 # и пропустить искажённое поручение хуже, чем отвергнуть карточку. Содержимое перед
 # проверкой проходит _meaningful: раздел, разбавленный нулевой шириной, обязан судиться
 # по тому, что в нём на деле написано.
-LOOP_CLASSES = ("one-shot", "continuable", "ralph-round")
-CAPABILITY_KEYS = ("vision", "terminal", "long-context", "reasoning")
-# One resolution of the format owner for every reader below, two layouts (2026-09-29): the ops
-# tree (<root>/tools/xtml/validate.py + <root>/config/card-format.json) and the portable skill
-# copy, which carries card-format.json next to itself. Before this, the skill copy could not find
-# the file at all and rejected every card over «routing». Byte-identity of the copies is enforced
-# by tools/xtml/check_vocab_sync.py. No absolute install path: XTML_CARD_FORMAT overrides, else
-# the file is found relative to this validator (a relocated tree keeps working; test clones carry
-# their own config/card-format.json).
-_CARD_FORMAT = next(
-    (p for p in ((Path(os.environ["XTML_CARD_FORMAT"]),) if os.environ.get("XTML_CARD_FORMAT") else ())
-     + (Path(__file__).resolve().parents[2] / "config" / "card-format.json",
-        Path(__file__).resolve().with_name("card-format.json")) if p.is_file()),
-    Path(__file__).resolve().parents[2] / "config" / "card-format.json")
-# W1a-K2 2026-09-26: loop-class vocabulary also has ONE owner (card-format.json);
-# the tuples above are fallbacks only, same contract as CAPABILITY_KEYS below.
-try:
-    LOOP_CLASSES = tuple(
-        json.loads(_CARD_FORMAT.read_text(encoding="utf-8")).get("loop_classes", ())
-    ) or LOOP_CLASSES
-except Exception:
-    pass
-# The card vocabulary has ONE owner (config/card-format.json); the tuple above is only the
-# fallback. Keeping them equal by hand is what made a matrix-mandated key ('mechanical')
-# illegal in the very card that had to state it. A missing file is reported, not ignored.
-try:
-    CAPABILITY_KEYS = tuple(
-        json.loads(_CARD_FORMAT.read_text(encoding="utf-8"))["capability_keys"]
-    )
-except (OSError, ValueError, KeyError, TypeError) as _exc:
-    print(f"card-format.json unusable ({type(_exc).__name__}); using the built-in vocabulary",
-          file=sys.stderr)
-# W65 2026-10-01 (выровнено W68 2026-10-01 по encoding_k3.py): профиль message — горизонтальная карта агент↔агент
-# (peer message), ¬ постановка. Грамматика первоисточника (arXiv 2607.24653, прил. F; код encoding_k3.py — истина):
-# верхняя единица message с role; роли прил. F — system | user | tool | assistant, межагентное сообщение — role="peer"
-# (расширение cXTML [X], ¬ прил. F); запрос к соседу МОЖЕТ нести call tool= index= с дочерними argument key= type=
-# (_render_assistant_segments); ответ на вызов несёт tool= index= вызова, как результат инструмента прил. F
-# (message role="tool" tool= index=); argument name= — устаревший алиас key= (предупреждение); [end_of_msg] допустим
-# в конце. Наши атрибуты id / from / to / type / re и разделы subject / body / evidence / needs / until — поверх. Владелец словаря — блок "message" в card-format.json (контракт как у
-# CAPABILITY_KEYS: словарь ниже — запасной). Карту читает машина (peer-bus send --xtml, messages.jsonl), поэтому
-# неизвестный раздел или атрибут — отказ, а не предупреждение: это канал доставки непроверенного текста соседу.
-MSG = {"root": "message", "role": "peer", "attrs": ["role", "id", "from", "to", "type", "re"],
-       "optional_attrs": ["tool", "index"], "types": ["REQ", "ACK", "NACK", "INFO", "CLAIM", "CONFLICT", "HANDOFF", "ESCALATE"],
-       "sections": ["subject", "body", "evidence", "needs", "until"], "until_required": ["REQ", "CLAIM", "CONFLICT"],
-       "needs_none_ok": ["INFO", "ACK"], "re_required": ["ACK", "NACK"], "closing_types": ["ACK", "NACK", "HANDOFF"],
-       "call": {"tag": "call", "attrs": ["tool", "index"], "argument": "argument", "argument_attrs": ["key", "type"],
-                "argument_alias": {"name": "key"}, "types": ["REQ", "CLAIM", "CONFLICT"]}}
-try:
-    MSG = {**MSG, **json.loads(_CARD_FORMAT.read_text(encoding="utf-8")).get("message", {})}
-except (OSError, ValueError, TypeError, AttributeError):
-    pass
-VOCAB["message"] = {MSG["root"], *MSG["sections"], MSG["call"]["tag"], MSG["call"]["argument"]}
-# W73 2026-10-01 (X11.1): профиль doc — документ (программа, план, сводка), ¬ постановка ∧ ¬ сообщение. Прежде у документа
-# не было профиля: any = только грамматика (код 1 по замыслу), delegation требует ядро карточки, и потребитель сверял
-# словарь сам. Здесь грамматика + закрытый словарь (тег вне словаря — отказ, код 2: документ читает машина) + корень из
-# roots; ядра нет. Владелец словаря — блок "doc" в card-format.json (контракт как у MSG: ниже запасной).
-DOC = {"roots": ["doc", "task"],
-       "elements": ["evidence", "invariants", "item", "items", "mission", "note", "section", "step", "steps", "t",
-                    "targets"]}
-try:
-    DOC = {**DOC, **json.loads(_CARD_FORMAT.read_text(encoding="utf-8")).get("doc", {})}
-except (OSError, ValueError, TypeError, AttributeError):
-    pass
-VOCAB["doc"] = {*DOC["roots"], *DOC["elements"]}
+# Словари значений — vocab.py (W1a-K2: loop-class; 2026-09-11: capability — один владелец, иначе ключ матрицы
+# 'mechanical' оказался запрещён в карточке, обязанной его назвать).
+LOOP_CLASSES = vocab.LOOP_CLASSES
+CAPABILITY_KEYS = vocab.CAPABILITY_KEYS
+# W65 / W68 2026-10-01: профиль message — горизонтальная карта агент↔агент (peer message), ¬ постановка; грамматика
+# первоисточника (прил. F, код encoding_k3.py — истина) + наши атрибуты ∧ разделы — vocab.MSG. Карту читает машина
+# (peer-bus send --xtml, messages.jsonl), поэтому неизвестный раздел или атрибут — отказ, а не предупреждение: это канал
+# доставки непроверенного текста соседу.
+MSG = vocab.MSG
+# W73 2026-10-01 (X11.1): профиль doc — документ (программа, план, сводка, передача трека), ¬ постановка ∧ ¬ сообщение:
+# грамматика + закрытый словарь (тег вне словаря — отказ, код 2: документ читает машина) + корень из roots; ядра нет.
+DOC = vocab.DOC
 # Адрес actor'а peer-bus (W44): agent:sid — основной поток, agent:sid:<agent_id> — субагент; в to ещё
 # agent:sid:* (все живые actor'ы сессии) и lane:<имя> (полоса). ASCII по построению, как NAME. Разбор адреса для
 # доставки — один, agents.addr в peer-bus; здесь только форма.
@@ -523,12 +453,12 @@ def _message_complaints(rep: Report) -> list[str]:
     return bad
 
 
-CONTEXT_BUDGET_KEYS = ("max-input-tokens", "report-inline-max")
-SEED_POLICIES = ("none", "context-inline")
+CONTEXT_BUDGET_KEYS = vocab.CONTEXT_BUDGET_KEYS
+SEED_POLICIES = vocab.SEED_POLICIES
 # Маркер, по которому читающий отчёт отличает вердикт от прозы. Форма зафиксирована
 # каноном: «VERDICT: PASS|FAIL». Проверяется само слово — регистр значим, маркер
 # протокольный, а не бытовой.
-VERDICT_MARKER = "VERDICT"
+VERDICT_MARKER = vocab.VERDICT_MARKER
 
 _CAPABILITY_PAIR = regex.compile(r"^([A-Za-z][A-Za-z0-9-]*):(true|false)$")
 # «2000» и «2000 chars» — обе формы законны (канон печатает вторую). Единица измерения —
@@ -603,10 +533,9 @@ def _v2_seed_policy(body: str) -> str | None:
 # Отображение «раздел → проверка». Присутствие раздела в карточке запускает его проверку;
 # отсутствие законно всегда. Порядок словаря фиксирует порядок сообщений.
 # Канон v2 (delegation-canon, card-format/v1): routing — обязательный раздел с строгим
-# JSON-пакетом из 13 полей. Единственный владелец формата — config/card-format.json;
-# валидатор читает его, а не держит замороженную копию (урок 2026-09-11: mechanical
-# требовался матрицей и запрещался валидатором, потому что списки жили в двух местах).
-# Путь к владельцу формата — _CARD_FORMAT, разрешён один раз выше (обе раскладки).
+# JSON-пакетом из 13 полей. Единственный владелец формата — vocab.py (поля, фазы, перечисления,
+# тиры); config/card-format.json — его генерируемая проекция для не-Python потребителей
+# (урок 2026-09-11: mechanical требовался матрицей и запрещался валидатором — списки жили в двух местах).
 
 
 def _routing_complaint(content: dict[str, str]) -> str | None:
@@ -622,25 +551,15 @@ def _routing_complaint(content: dict[str, str]) -> str | None:
         return f"раздел «routing» не является строгим JSON: {e}"
     if not isinstance(pkt, dict):
         return "раздел «routing» должен быть JSON-объектом"
-    try:
-        fmt = _json.loads(_CARD_FORMAT.read_text(encoding="utf-8"))
-    except Exception as e:
-        return f"не читается card-format.json ({_CARD_FORMAT}): {e}"
-    required = set(fmt.get("routing_fields", []))
-    optional = set(fmt.get("routing_optional", []))
+    required = set(vocab.ROUTING_FIELDS)
+    optional = set(vocab.ROUTING_OPTIONAL)
     missing = required - set(pkt)
     extra = set(pkt) - required - optional
     if missing:
         return "routing: нет полей — " + ", ".join(sorted(missing))
     if extra:
         return "routing: неизвестные поля — " + ", ".join(sorted(extra))
-    enums = {
-        "phase": set(fmt.get("phases", [])),
-        "risk": {"low", "elevated", "critical", "unknown"},
-        "scope": {"local", "cross_system", "unknown"},
-        "contract": {"clear", "ambiguous", "unknown"},
-        "failure": {"none", "quality", "infrastructure"},
-    }
+    enums = {"phase": set(vocab.PHASES), **{k: set(v) for k, v in vocab.ROUTING_ENUMS.items()}}
     for key, allowed in enums.items():
         if pkt.get(key) not in allowed:
             return (f"routing.{key}={pkt.get(key)!r} не входит в "
@@ -659,7 +578,7 @@ def _routing_complaint(content: dict[str, str]) -> str | None:
             return f"routing.{key} должен быть bool"
     if not isinstance(pkt.get("escalations"), int) or isinstance(pkt.get("escalations"), bool):
         return "routing.escalations должен быть int"
-    tiers = {"luna", "terra", "sol", "astra"}
+    tiers = set(vocab.TIERS)
     for key in ("previous_tier", "specialist"):
         val = pkt.get(key)
         if val is None:
@@ -922,10 +841,28 @@ def scan(text: str, vocab: set[str], eom_allowed: bool, strict_gaps: bool = True
     return r
 
 
+def _man(tag: str, profile: str | None) -> int:
+    """--man: the article(s) of a tag from vocab.py; no tag — the index. Without --profile every profile is searched."""
+    if not tag:
+        print(vocab.index(profile))
+        return 0
+    found = vocab.articles(tag, profile)
+    if not found:
+        known = sorted({m.tag for m in vocab.articles(profile=profile)})
+        print(f"ОШИБКА: статьи «{tag}» нет{' в профиле ' + profile if profile else ''} — есть: {', '.join(known)}",
+              file=sys.stderr)
+        return 2
+    print("\n\n".join(vocab.render(m) for m in found))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Validate an XTML-notation prompt.")
-    ap.add_argument("source", help="файл или - для stdin")
-    ap.add_argument("--profile", choices=sorted(VOCAB) + ["any"], default="delegation")
+    ap.add_argument("source", nargs="?", help="файл или - для stdin")
+    ap.add_argument("--profile", choices=sorted(VOCAB) + ["any"], default=None,
+                    help="по умолчанию delegation; у --man без флага — все профили")
+    ap.add_argument("--man", nargs="?", const="", metavar="TAG",
+                    help="man-статья тега из vocab.py (без тега — перечень); файл не нужен")
     ap.add_argument("--allow-no-routing", action="store_true",
                 help="канон до v2: разрешить карточку без раздела routing "
                      "(для перевалидации исторического корпуса; новые карточки "
@@ -933,6 +870,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--strict", action="store_true",
                     help="теги вне словаря профиля считать отказом (код 1)")
     args = ap.parse_args(argv)
+    if args.man is not None:
+        if args.source is not None:
+            ap.error("файл (или - для stdin) и --man нельзя использовать вместе")
+        return _man(args.man, args.profile)
+    if args.source is None:
+        ap.error("нужен файл (или - для stdin), либо --man [тег]")
+    args.profile = args.profile or "delegation"
 
     if args.source == "-":
         text = sys.stdin.read()
@@ -947,17 +891,16 @@ def main(argv: list[str] | None = None) -> int:
                   f"кодировку файла, а не про разметку внутри него", file=sys.stderr)
             return 2
 
-    vocab = set().union(*VOCAB.values()) if args.profile == "any" else VOCAB[args.profile]
+    known = set().union(*VOCAB.values()) if args.profile == "any" else VOCAB[args.profile]
     if args.profile == "delegation":
-        # Разделы канона v2 — известные теги, хотя и вне VOCAB (причина у их объявления
-        # выше: VOCAB сверен с user-owned SKILL.md и потому этой волной не расширялся).
-        vocab = vocab | set(V2_SECTIONS)
+        # Разделы канона v2 — известные теги, хотя и вне VOCAB (причина — у объявления VOCAB выше).
+        known = known | set(V2_SECTIONS)
     # Текст прямо внутри корня — ошибка в КАРТОЧКЕ, где всё содержимое обязано лежать в
     # разделах, и норма в СООБЩЕНИИ K3, где тело сообщения лежит в корне и есть весь
     # смысл формата. Правило было написано без этой оговорки и отвергло законное
     # `[open]message role="user"[sep]Privet[close]message[sep]` — то есть ровно то, ради
     # чего профиль kimi существует. Поймано адверсарным проходом в тот же час.
-    rep = scan(text, vocab, eom_allowed=args.profile in EOM_ALLOWED,
+    rep = scan(text, known, eom_allowed=args.profile in EOM_ALLOWED,
                strict_gaps=args.profile in ("delegation", "message", "doc"),
                max_depth=KIMI_NEST_DEPTH if args.profile in ("kimi", "any") else MAX_NEST_DEPTH)
 
@@ -1113,7 +1056,7 @@ def main(argv: list[str] | None = None) -> int:
         if rep.root not in DOC["roots"]:
             rep.errors.append(f"корневой элемент «{rep.root}» — документ начинается с одного из: "
                               + " | ".join(DOC["roots"]))
-        rep.errors.extend(f"{w} — словарь документа закрыт (card-format.json doc): "
+        rep.errors.extend(f"{w} — словарь документа закрыт (vocab.py, профиль doc): "
                           f"неизвестный элемент не прочитает ни один потребитель" for w in rep.vocab_warnings)
         rep.vocab_warnings = []
 

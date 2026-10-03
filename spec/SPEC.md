@@ -181,10 +181,10 @@ char           = %x00-10FFFF
 
 | key | value |
 |---|---|
-| elements | ["doc", "evidence", "invariants", "item", "items", "mission", "note", "section", "step", "steps", "t", "targets", "task"] |
+| elements | ["doc", "done-this-wave", "evidence", "git-blocker", "handoff", "invariants", "item", "items", "mission", "next-action", "note", "peers", "remaining", "section", "status", "step", "steps", "t", "targets", "task", "track-dir", "verify"] |
 | end_of_msg_allowed | false |
 | text_directly_in_root | false |
 | max_nest_depth | 3 |
 | name_pattern | `[A-Za-z][A-Za-z0-9._-]*` |
-| roots | ["doc", "task"] |
+| roots | ["doc", "handoff", "task"] |
 | closed_vocabulary | true |

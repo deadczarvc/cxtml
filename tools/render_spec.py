@@ -35,18 +35,12 @@ def _load(path: Path, name: str):
     return mod
 
 
-def _routing_literals(tree: ast.AST) -> tuple[dict, list]:
-    """Enum sets written inside _routing_complaint (not importable: they are locals)."""
-    fn = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_routing_complaint")
-    enums, tiers = {}, []
-    for node in ast.walk(fn):
-        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
-            if node.targets[0].id == "enums":
-                for k, v in zip(node.value.keys, node.value.values):
-                    enums[ast.literal_eval(k)] = sorted(ast.literal_eval(v)) if isinstance(v, ast.Set) else None
-            elif node.targets[0].id == "tiers":
-                tiers = sorted(ast.literal_eval(node.value))
-    return enums, tiers
+def _routing_literals(ref) -> tuple[dict, list]:
+    """Routing enums and tiers from the validator's vocabulary module (vocab.py owns them since R11).
+
+    phase is None here: profiles() fills it from card-format.json "phases"."""
+    enums = {"phase": None, **{k: sorted(v) for k, v in ref.vocab.ROUTING_ENUMS.items()}}
+    return enums, sorted(ref.vocab.TIERS)
 
 
 def _strict_gap_profiles(tree: ast.AST) -> list:
@@ -58,7 +52,7 @@ def profiles() -> dict[str, dict]:
     ref = _load(VAL / "validate.py", "cxtml_ref_render")
     cf = json.loads((VAL / "card-format.json").read_text(encoding="utf-8"))
     tree = ast.parse((VAL / "validate.py").read_text(encoding="utf-8"))
-    enums, tiers = _routing_literals(tree)
+    enums, tiers = _routing_literals(ref)
     enums = {k: (v if v is not None else sorted(cf["phases"])) for k, v in enums.items()}
     gaps = _strict_gap_profiles(tree)
     markers = {"open": ref.OPEN, "sep": ref.SEP, "close": ref.CLOSE, "end_of_msg": ref.EOM}

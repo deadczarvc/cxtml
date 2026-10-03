@@ -1,6 +1,6 @@
 {
+ "_generated_from": "tools/xtml/vocab.py",
  "schema": "card-format/v1",
- "why": "Единственный владелец формата карточки. Три потребителя (валидатор карточек, разборщик требований, матрица через гейт) читают эти списки вместо собственных замороженных копий, поэтому слово, обязательное для одного, больше не может быть запрещено у другого. Найдено 2026-09-11: ключ mechanical требовался матрицей и запрещался валидатором.",
  "sections": {
   "mandatory": [
    "task",
@@ -67,25 +67,12 @@
   "verify",
   "arbitrate"
  ],
- "notes": {
-  "unknown_section": "Раздел вне обязательных и известных — не ошибка, но сигнал: если он повторяется, его место в known_extra.",
-  "unknown_capability_key": "Ошибка. Ключ никто не прочитает и требование потеряется молча.",
-  "consumers": [
-   "tools/xtml/validate.py",
-   "hooks/evidence_router.py",
-   "hooks/preflight-gate.py",
-   "scripts/card-format-check.py"
-  ],
-  "arbitrate": "Добавлено 2026-09-22: фаза арбитража консенсуса (sigma compiler + evidence_router её уже допускали; card-format отставал).",
-  "loop_classes": "Single owner for the loop-class vocabulary (W1a finding K2 2026-09-26): validate.py frozen tuple was the de-facto owner; moved here so all gates read one source."
- },
  "loop_classes": [
   "one-shot",
   "continuable",
   "ralph-round"
  ],
  "message": {
-  "why": "W65 2026-10-01, выровнено W68 2026-10-01 по encoding_k3.py (код первоисточника — истина; роли прил. F: system | user | tool | assistant): горизонтальная карта агент↔агент (peer message), ¬ постановка. Корень message role=\"peer\" (расширение cXTML [X], ¬ прил. F); запрос МОЖЕТ нести call tool= index= с argument key= type= (name= — устаревший алиас key=, предупреждение); ответ на вызов несёт tool= index= вызова, как результат инструмента прил. F (message role=tool tool= index=); [end_of_msg] допустим в конце. Потребители: tools/xtml/validate.py (profile message), tools/xtml/codec.py, <peer-bus> (send --xtml, messages.jsonl).",
   "root": "message",
   "role": "peer",
   "attrs": [
@@ -157,23 +144,31 @@
   }
  },
  "doc": {
-  "why": "W73 2026-10-01 (X11.1): документ (программа, план, сводка), ¬ постановка ∧ ¬ сообщение: грамматика + закрытый словарь документа, без ядра карточки. Корень doc | task; разделы, цели (targets / t), шаги (steps / step), пункты (items / item). Тег вне словаря — отказ (код 2): документ читает машина. Потребители: tools/xtml/validate.py (profile doc), генератор документов программы (program.py validate()).",
   "roots": [
    "doc",
+   "handoff",
    "task"
   ],
   "elements": [
+   "done-this-wave",
    "evidence",
+   "git-blocker",
    "invariants",
    "item",
    "items",
    "mission",
+   "next-action",
    "note",
+   "peers",
+   "remaining",
    "section",
+   "status",
    "step",
    "steps",
    "t",
-   "targets"
+   "targets",
+   "track-dir",
+   "verify"
   ]
  }
 }
