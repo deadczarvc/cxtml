@@ -30,6 +30,32 @@
   escaped spelling, so the text form is total: the 600 hostile generated trees the codec used to refuse in part now
   round-trip 600 / 600, and `validate.scan` reads every rendered text with the codec's structure.
 
+## Unreleased (2026-10-22): station experience
+
+- `spec/VOCABULARY.md`: the dictionary as data. One data file plus a schema, two generated projections
+  (`card-format.json` and the `PHASES` line) that must never be edited by hand, and one growth tool with three
+  operations (`add-tag`, `add-phase`, `add-enum-value`), a dry run that writes nothing, three gates on apply, a backup
+  and a rollback, an append-only journal, a strict-superset assertion, and no removal by automation. A tag added to a
+  required list is refused, because it would change the fate of historical cards.
+- `spec/DIALECTS.md`: `xtml-card` (token markup, checked against a profile) and `xml-doc` (angle tags, well-formedness
+  only), the rule that the first structural token decides the dialect, and the requirement that a document's dialect be
+  declared and agree with that decision. The known gap (detection is quote-blind) is recorded, not hidden.
+- `spec/PLUGIN-CONTRACT.md`: the validator, the profile registry and the card generator as three tools with 4, 0 and 2
+  parameters; why the schemas are flat (per-call cost, a JSON node ceiling at the boundary); the refusal table that makes
+  a false OK impossible, including a missing engine, an empty registry that exited 0, an absent phase list, and input
+  above the ceiling refused rather than truncated.
+- `docs/A2A.md`: the measured agent-to-agent registry of the reference station (five identities, five peers, loopback
+  ports, kind, enabled, today's liveness), the owner's rule that an agent does not initiate A2A without direct words,
+  the reads that are allowed, the channel separation between session mail and A2A, and the measured root of the missing
+  reflex: the harness has no identity in the registry, so it cannot be an addressee.
+- `tools/dialect.py` implements the detection and the declaration check; `tests/test_dialects.py` enforces it on every
+  fixture; `tests/test_public_docs.py` enforces English-only text, no machine-local paths and provenance on every claim.
+- Every `.expect.json` now declares its `dialect`; markers for a deliberate violation are `dialect_violation`.
+- Corpus: `valid/phase-arbitrate.xtml` (a phase from the shipped set, accepted) beside `invalid/phase-from-data.xtml`
+  (a phase outside it, exit 2) and `invalid/enum-scope-global.xtml` (an enum value outside the closed dictionary,
+  exit 2) — the pair is the evidence that the closed set is closed and not merely broken. `invalid/dialect-*` and
+  `examples/xml-doc-card.xml` cover the dialect rule.
+
 ## Proposed (not in 1.0)
 
 - Dialect marker: optional root attribute `dialect="cxtml/1.0"`. The `delegation` profile already accepts extra root

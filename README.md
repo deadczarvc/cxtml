@@ -38,14 +38,18 @@ Every document valid under App. F XTML (profile `kimi`) is valid cXTML.
 | path | content |
 |---|---|
 | `spec/SPEC.md` | the specification, GENERATED (rules + grammar + vocabulary) |
+| `spec/VOCABULARY.md` | extension: the dictionary as data (schema, generated projections, gated growth) |
+| `spec/DIALECTS.md` | extension: token markup vs angle tags, first-token detection, mandatory dialect declaration |
+| `spec/PLUGIN-CONTRACT.md` | extension: the validator and the generator as three small-schema tools; a false OK is forbidden |
+| `docs/A2A.md` | experience: the measured agent-to-agent registry, the owner's rule, and the measured root of a missing reflex |
 | `grammar/` | normative rules (`RULES.md`) and ABNF (`cxtml.abnf`); App. F vs cXTML origin marked per rule |
 | `profiles/` | per-profile vocabulary, GENERATED from the validator |
 | `validator/` | mirror of the upstream reference validator, pinned by `SOURCE.lock` |
 | `corpus/valid`, `corpus/invalid` | conformance cards, one `.expect.json` verdict per card |
 | `validator/codec.py` | reference codec (stdlib): one AST, a text renderer and a K3 token renderer, `parse` for both |
-| `tests/` | conformance runner (`test_conformance.py`), codec round trips and differential checks (`test_codec.py`) |
-| `examples/` | small annotated documents per profile |
-| `tools/` | spec renderer, mirror sync check, sanitization gate |
+| `tests/` | conformance runner (`test_conformance.py`), dialect rules (`test_dialects.py`), codec round trips and differential checks (`test_codec.py`) |
+| `examples/` | small annotated documents per profile, plus an `xml-doc` twin of the delegation card |
+| `tools/` | spec renderer, mirror sync check, sanitization gate, dialect detector |
 
 ## Run
 
@@ -55,6 +59,7 @@ python tools/sync_validator.py          # mirror bytes match SOURCE.lock
 python tools/render_spec.py --check     # generated files match their sources
 python -m unittest discover tests -v    # every card gets its expected verdict
 python tools/sanitize_scan.py           # 0 hits
+python tools/dialect.py examples/delegation-card.xtml --declared xtml-card   # dialect decision + declaration check
 ```
 
 The reference validator is maintained in Russian; its diagnostics are Russian, and the `reason` substrings in
