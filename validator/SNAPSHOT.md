@@ -1,12 +1,13 @@
 # Status of the published snapshot
 
-`validator/` is the last publishable snapshot of the upstream reference validator, taken on 2026-10-22
-and pinned by `SOURCE.lock`. It is **not** a byte-for-byte mirror of the current upstream.
+`validator/` is the last publishable snapshot of the upstream reference validator (published
+2026-10-01 to 2026-10-03), pinned by `SOURCE.lock` after the upstream hashes were measured on
+2026-10-22. It is **not** a byte-for-byte mirror of the current upstream.
 
 `SOURCE.lock` therefore states three measured facts and nothing more:
 
 - `mirror_sha256` — the sha256 of every file published here;
-- `upstream_sha256` — the sha256 the upstream files had when this snapshot was measured;
+- `upstream_sha256` — the sha256 the upstream files had on the measurement date, 2026-10-22;
 - `map_sha256` — `null`: no substitution map exists, so the claim "map(upstream) equals the mirror" is
   not made.
 
