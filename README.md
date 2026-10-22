@@ -44,7 +44,7 @@ Every document valid under App. F XTML (profile `kimi`) is valid cXTML.
 | `docs/A2A.md` | experience: the measured agent-to-agent registry, the owner's rule, and the measured root of a missing reflex |
 | `grammar/` | normative rules (`RULES.md`) and ABNF (`cxtml.abnf`); App. F vs cXTML origin marked per rule |
 | `profiles/` | per-profile vocabulary, GENERATED from the validator |
-| `validator/` | mirror of the upstream reference validator, pinned by `SOURCE.lock` |
+| `validator/` | published snapshot of the upstream reference validator, pinned by `SOURCE.lock` (status: `validator/SNAPSHOT.md`) |
 | `corpus/valid`, `corpus/invalid` | conformance cards, one `.expect.json` verdict per card |
 | `validator/codec.py` | reference codec (stdlib): one AST, a text renderer and a K3 token renderer, `parse` for both |
 | `tests/` | conformance runner (`test_conformance.py`), dialect rules (`test_dialects.py`), codec round trips and differential checks (`test_codec.py`) |
@@ -61,6 +61,11 @@ python -m unittest discover tests -v    # every card gets its expected verdict
 python tools/sanitize_scan.py           # 0 hits
 python tools/dialect.py examples/delegation-card.xtml --declared xtml-card   # dialect decision + declaration check
 ```
+
+The mirror is a snapshot, not a live copy. `tools/sync_validator.py` proves the published bytes against
+`SOURCE.lock`; the mode that also proves the upstream (`--canon`) needs a private substitution map that
+this station does not have, so the lock records the measured upstream hashes and `map_sha256: null`.
+Where the snapshot and the current upstream differ, `validator/SNAPSHOT.md` names it.
 
 The reference validator is maintained in Russian; its diagnostics are Russian, and the `reason` substrings in
 `corpus/**/*.expect.json` quote them. Exit codes are the language-neutral contract: 0 clean, 1 advisory, 2 malformed.

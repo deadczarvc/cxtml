@@ -151,7 +151,10 @@ The vocabulary is one JSON object. Keys, as shipped by the reference implementat
    of this repository cannot see the data file. Closing that gap is a mirror sync, and the mirror changes only through
    `tools/sync_validator.py`. [F/A]
 2. The substitution map that `sync_validator.py --canon/--update/--push` needs is not present on this station, so the
-   mirror cannot be updated by its own tool; the drift is therefore measured and reported, not repaired. [F/A]
+   mirror cannot be updated by its own tool; the drift is therefore measured and reported, not repaired. `SOURCE.lock`
+   carries no map (`map_sha256: null`); it asserts the sha256 of the published bytes and the sha256 the upstream had on
+   2026-10-22. Three files differ and the difference is code, so no prose map could reconcile them — `validator/SNAPSHOT.md`
+   names each one. [F/A]
 3. The station's data file is a private artefact with private prose; publishing it verbatim is not acceptable. What is
    publishable is the mechanism specified here, which is why this document describes shapes and rules rather than
    copying articles. [I/B]

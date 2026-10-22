@@ -1,2 +1,6 @@
 __pycache__/
 .ruff_cache/
+.pytest_cache/
+# indexer of the machine, never part of this repository
+.codegraph/
+codegraph.json
