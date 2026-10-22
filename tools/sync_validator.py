@@ -197,9 +197,9 @@ def main(argv: list[str] | None = None) -> int:
     # только пара зеркало<->SOURCE.lock, а не станция<->зеркало. Раньше строка
     # «validator mirror: in sync» читалась как подтверждение синхронности с
     # upstream, хотя upstream в этом режиме не читался вовсе.
-    scope = ("mirror<->lock and upstream<->mirror checked" if a.canon
-             else "mirror<->lock only; upstream NOT checked (pass --canon)")
-    print("validator mirror: " + ("FAIL" if bad else "in sync") + f" ({scope})")
+    scope = ("scope: mirror<->lock and upstream<->mirror" if a.canon
+             else "scope: mirror<->lock only, upstream NOT checked — pass --canon to verify drift")
+    print("validator mirror: " + ("FAIL" if bad else "in sync") + f" [{scope}]")
     return 1 if bad else 0
 
 
