@@ -1,1 +1,1 @@
-{"profile": "delegation", "exit": 2, "reason": "нет обязательного раздела «routing»"}
+{"profile": "delegation", "dialect": "xtml-card", "exit": 2, "reason": "нет обязательного раздела «routing»"}

@@ -1,0 +1,26 @@
+[open]task id="enum-scope"[sep]
+[open]routing[sep]
+{"escalations": 0, "failure": "none", "localized": false, "mechanical": false, "previous_tier": null, "contract": "clear", "scope": "global", "phase": "implement", "role": "engineer", "risk": "low", "evidence": ["spec/VOCABULARY.md section 6"], "acceptance": "python -m pytest -q", "specialist": null}
+[close]routing[sep]
+[open]mission[sep]
+An enum value outside the closed dictionary must be refused, so an unknown scope never reads as a local one.
+[close]mission[sep]
+[open]invariants[sep]
+The validator, not the reader, decides what an enum value means.
+[close]invariants[sep]
+[open]source-of-truth[sep]
+spec/VOCABULARY.md section 6
+[close]source-of-truth[sep]
+[open]acceptance[sep]
+python -m pytest -q
+[close]acceptance[sep]
+[open]write-scope[sep]
+No files are written by the card itself.
+[close]write-scope[sep]
+[open]stop-conditions[sep]
+Stop if this card is ever accepted without the alias table being extended on purpose.
+[close]stop-conditions[sep]
+[open]report-path[sep]
+reports/enum-scope.md
+[close]report-path[sep]
+[close]task[sep]

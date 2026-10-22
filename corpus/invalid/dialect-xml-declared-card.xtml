@@ -1,0 +1,5 @@
+<card id="declared-card">
+  <mission>This document is XML but declares the token dialect xtml-card.</mission>
+  <invariants>Dialect is decided by the first structural token, and a contradicted declaration is refused.</invariants>
+  <acceptance>python -m pytest -q</acceptance>
+</card>

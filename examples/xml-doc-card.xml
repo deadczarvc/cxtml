@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The same delegation card as examples/delegation-card.xtml, in the xml-doc dialect: angle tags, well-formedness
+     only, no profile vocabulary. Kept beside the token form so the difference between the two dialects is a file
+     pair, not a paragraph. -->
+<task id="example">
+  <routing>{"escalations": 0, "failure": "none", "localized": false, "mechanical": false, "previous_tier": null, "contract": "clear", "scope": "local", "phase": "implement", "role": "engineer", "risk": "low", "evidence": ["design note section 2"], "acceptance": "python -m unittest discover tests", "specialist": null}</routing>
+  <mission>Implement the parser change described in the design note and report what changed.</mission>
+  <invariants>Public interfaces stay backward compatible.</invariants>
+  <source-of-truth>docs/design.md; src/parser/</source-of-truth>
+  <acceptance>python -m unittest discover tests</acceptance>
+  <write-scope>Only src/parser/ and reports/.</write-scope>
+  <stop-conditions>A test outside the write-scope fails: stop and report.</stop-conditions>
+  <report-path>reports/parser.md</report-path>
+</task>

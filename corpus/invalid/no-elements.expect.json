@@ -1,1 +1,1 @@
-{"profile": "delegation", "exit": 2, "reason": "нет ни одного элемента"}
+{"profile": "delegation", "dialect": "unknown", "exit": 2, "reason": "нет ни одного элемента", "dialect_violation": "no structural token: dialect undetermined"}
