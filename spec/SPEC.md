@@ -96,6 +96,16 @@ A cXTML document addressed to a model without the reserved tokens MUST pass a co
 
 This is cXTML/1.0; changes are listed in CHANGELOG.md. A document-level dialect marker is a proposal, not part of 1.0 (see CHANGELOG.md, "Proposed").
 
+### 1.12 Extension documents [X]
+
+Three documents sit beside these rules. They describe mechanism and measured behaviour; they are not part of cXTML/1.0, and no rule becomes normative for this version until the reference validator implements it and the rule is written here.
+
+1. `spec/VOCABULARY.md` — the dictionary as data: the data file and its schema, the two generated projections, and the gated tool that adds a tag, a phase or an enum value without letting a hand edit reach a consumer.
+2. `spec/DIALECTS.md` — the two dialects the tooling speaks, `xtml-card` (token markup, checked against a profile) and `xml-doc` (angle tags, well-formedness only), the rule that the first structural token decides, and the requirement that a document's dialect be declared and agree with that decision.
+3. `spec/PLUGIN-CONTRACT.md` — how the validator and the card generator are exposed to an agent as three tools with small schemas, and the refusal table that makes a false OK impossible.
+
+`docs/A2A.md` records agent-to-agent experience: the measured registry, the owner's rule about who may open a conversation, and the measured reason a reflex is absent.
+
 ## 2. Formal grammar (ABNF, RFC 5234 + RFC 7405)
 
 ```abnf
