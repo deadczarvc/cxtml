@@ -28,7 +28,7 @@ whose claims are unmarked.
 | stop marker | `[end_of_msg]` where the profile allows it | none |
 | checked by | the card validator with a profile (`delegation`, `kimi`, `message`, `doc`) | a well-formedness validator with the `generic` profile |
 | vocabulary | closed per profile; a tag outside it is a warning, an error under `--strict`, and an error for the closed `doc` profile | not checked |
-| failure surface | exit 0 clean, 1 advisory, 2 structurally malformed | well-formed or not |
+| failure surface | exit 0 clean, 1 advisory, 2 structurally malformed | exit 0 well formed, 1 malformed, checked by `tools/dialect.py` |
 | what it cannot express | arbitrary XML documents, namespaces, XML comments and processing instructions as such | the profile contract, routing, mandatory sections |
 
 [F/A: measured engines, profiles and exit codes; the last row is [I/A] by construction]
@@ -72,16 +72,21 @@ whose claims are unmarked.
 | plain prose with no markers and no tags | none | refused: dialect undetermined, "silent OK is forbidden" |
 | an XML document declared `xtml-card` | card validator, `delegation` | exit 2, "no XTML element in the document"; and the declaration check also refuses the mismatch |
 | an XML document with `[open]` quoted before its first tag | card validator (by §3.5) | exit 2: the quote is read as structure, which is why the declaration is mandatory |
+| a malformed XML document declared `xml-doc` | the well-formedness gate in `tools/dialect.py` | exit 1, `well_formed: false` and the parser's own message; a clean `xml-doc` verdict is not reachable |
 
 [F/A: the first three rows were measured with the mirrored validator and `tools/dialect.py`; the fourth follows from
-the detection rule and is recorded as a gap, not as a tested behaviour]
+the detection rule and is recorded as a gap, not as a tested behaviour; the fifth was measured on
+`corpus/invalid/xml-malformed.xml` (exit 1) against the well-formed control `examples/xml-doc-card.xml` (exit 0)]
 
 ## 6. Gaps recorded, not hidden
 
 1. Detection is quote-blind (§3.5): a marker inside a literal region counts as a structural token. Closing this needs a
    detection pass that shares the validator's literal-region scanner; today it does not exist in either engine. [F/B]
-2. The mirrored validator implements the card dialect only. `xml-doc` well-formedness is a separate engine in the
-   contour, not part of this repository, so the repository can test the *decision* but not the XML verdict. [F/A]
+2. The mirrored validator implements the card dialect only. `xml-doc` is checked for well-formedness by the standard
+   library parser in `tools/dialect.py`, which is exactly the contract of that dialect (§2): a refusal with exit 1 on a
+   malformed document, never a clean verdict. A schema, a namespace or a content model is not checked, because the
+   dialect does not promise one and inventing it here would be a second, unowned contract. [F/A: measured on
+   `corpus/invalid/xml-malformed.xml` and `examples/xml-doc-card.xml`]
 3. The declaration rule is enforced on the repository's fixtures, not by the contour's plugin, which still infers the
    dialect instead of comparing a declaration. That is a gap in the plugin, stated here so a reader does not assume
    otherwise. [F/A]

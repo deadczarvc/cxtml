@@ -4,6 +4,15 @@
     python tools/dialect.py FILE                 # one decision, machine-readable
     python tools/dialect.py --declared xml-doc FILE   # + the declaration check
 
+Exit codes of this tool, and what each one means:
+
+    0  the dialect is decided, the declaration (when given) agrees, and an `xml-doc` document is well formed
+    1  `xml-doc` that is not well formed: the dialect's only contract fails, so the answer is a refusal
+    2  the dialect is undetermined, or the declaration contradicts the detection
+
+An `xml-doc` verdict is the well-formedness check itself (spec/DIALECTS.md §2), so it MUST NOT come back clean on a
+document the XML parser rejects: that would be the silent OK this repository exists to prevent.
+
 The rule is taken from the reference tooling, not invented here: the dialect is decided by the FIRST
 structural token in document order, never by the file extension or the file name, and the decision carries
 the two offsets it was made from so a wrong verdict can be argued with instead of guessed at (upstream
@@ -25,6 +34,7 @@ import argparse
 import json
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 DIALECTS = ("xtml-card", "xml-doc", "unknown")
@@ -54,6 +64,22 @@ def detect(text: str) -> dict:
     }
 
 
+def xml_well_formed(text: str) -> tuple[bool, str | None]:
+    """The verdict of the `xml-doc` dialect: well-formedness, nothing more and nothing less.
+
+    A schema, a namespace or a content model is not checked here — inventing one would promise more than the
+    dialect says (spec/DIALECTS.md §2 and §6). A document the parser rejects returns the parser's own message, so
+    the caller gets a refusal that names its cause instead of a bare verdict.
+    """
+    parser = ET.XMLParser()
+    try:
+        parser.feed(text or "")
+        parser.close()
+    except ET.ParseError as exc:
+        return False, str(exc)
+    return True, None
+
+
 def declaration_complaints(text: str, declared: str) -> list[str]:
     """Refusals of the declaration rule (spec/DIALECTS.md): an undeclared or contradicted dialect."""
     bad: list[str] = []
@@ -79,13 +105,24 @@ def main(argv: list[str] | None = None) -> int:
     text = a.path.read_text(encoding="utf-8", errors="replace")
     found = detect(text)
     out = {"path": a.path.as_posix(), **found}
+    rc = 0
+    if found["dialect"] == "unknown":
+        rc = 2
+    if found["dialect"] == "xml-doc":
+        well_formed, error = xml_well_formed(text)
+        out["well_formed"] = well_formed
+        if not well_formed:
+            out["xml_error"] = error
+            rc = 1
     if a.declared:
         bad = declaration_complaints(text, a.declared)
         out["declared"] = a.declared
         out["complaints"] = bad
         out["declaration_ok"] = not bad
+        if bad:
+            rc = 2
     print(json.dumps(out, ensure_ascii=False, indent=1))
-    return 0 if out.get("declaration_ok", True) and found["dialect"] != "unknown" else 2
+    return rc
 
 
 if __name__ == "__main__":

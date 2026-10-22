@@ -10,7 +10,9 @@ declaration in `.expect.json`; a fixture that is meant to demonstrate a contradi
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
 import re
 import unittest
@@ -123,6 +125,49 @@ class XmlDoc(unittest.TestCase):
         self.assertEqual(card_sections - {"task"}, xml_sections, "the pair drifted apart")
         self.assertEqual(DIALECT.detect(card.read_text(encoding="utf-8"))["dialect"], "xtml-card")
         self.assertEqual(DIALECT.detect(xml.read_text(encoding="utf-8"))["dialect"], "xml-doc")
+
+
+class MalformedXml(unittest.TestCase):
+    """`xml-doc` promises well-formedness and nothing else, so a malformed document is a refusal, not a verdict."""
+
+    def malformed(self) -> Path:
+        return ROOT / "corpus" / "invalid" / "xml-malformed.xml"
+
+    def test_the_fixture_exists_and_is_really_malformed(self):
+        path = self.malformed()
+        self.assertTrue(path.is_file(), "no malformed xml fixture: the refusal would be prose only")
+        self.assertTrue(path.with_suffix(".expect.json").is_file(), path.name)
+        with self.assertRaises(ET.ParseError):
+            ET.parse(path)
+
+    def test_the_tool_refuses_malformed_xml_with_exit_1(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rc = DIALECT.main([str(self.malformed()), "--declared", "xml-doc"])
+        self.assertEqual(rc, 1, out.getvalue())
+        report = json.loads(out.getvalue())
+        self.assertEqual(report["dialect"], "xml-doc")
+        self.assertFalse(report["well_formed"])
+        self.assertTrue(report["xml_error"], "a refusal must name the parser's complaint")
+
+    def test_the_fixture_expectation_says_refusal(self):
+        exp = json.loads(self.malformed().with_suffix(".expect.json").read_text(encoding="utf-8"))
+        self.assertEqual(exp["dialect"], "xml-doc")
+        self.assertEqual(exp["exit"], 1)
+
+    def test_a_well_formed_xml_document_stays_clean(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rc = DIALECT.main([str(ROOT / "examples" / "xml-doc-card.xml"), "--declared", "xml-doc"])
+        self.assertEqual(rc, 0, out.getvalue())
+        self.assertTrue(json.loads(out.getvalue())["well_formed"])
+
+    def test_a_contradicted_declaration_outranks_well_formedness(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rc = DIALECT.main([str(self.malformed()), "--declared", "xtml-card"])
+        self.assertEqual(rc, 2, out.getvalue())
+        self.assertFalse(json.loads(out.getvalue())["declaration_ok"])
 
 
 if __name__ == "__main__":

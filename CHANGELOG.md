@@ -51,6 +51,10 @@
 - `tools/dialect.py` implements the detection and the declaration check; `tests/test_dialects.py` enforces it on every
   fixture; `tests/test_public_docs.py` enforces English-only text, no machine-local paths and provenance on every claim.
 - Every `.expect.json` now declares its `dialect`; markers for a deliberate violation are `dialect_violation`.
+- `xml-doc` verdict (2026-10-22): the well-formedness contract of the dialect is now enforced where the dialect is
+  decided, so a malformed XML document comes back as exit 1 with the parser's own message instead of a clean answer.
+  Fixture `corpus/invalid/xml-malformed.xml`; the refusal and the well-formed control are pinned in
+  `tests/test_dialects.py`, and a contradicted declaration still outranks well-formedness with exit 2.
 - Corpus: `valid/phase-arbitrate.xtml` (a phase from the shipped set, accepted) beside `invalid/phase-from-data.xtml`
   (a phase outside it, exit 2) and `invalid/enum-scope-global.xtml` (an enum value outside the closed dictionary,
   exit 2) — the pair is the evidence that the closed set is closed and not merely broken. `invalid/dialect-*` and

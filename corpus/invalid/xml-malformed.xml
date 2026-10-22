@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Negative case for spec/DIALECTS.md section 5: the element `task` is never closed, so the document is not
+     well formed. "Well-formedness only" is the entire contract of the xml-doc dialect, therefore a malformed
+     document must be refused (exit 1) and must never be reported as a clean xml-doc. Keep it malformed. -->
+<task id="malformed">
+  <mission>An element that is never closed, used as the refusal fixture of the xml-doc dialect.</mission>
+  <invariants>Malformed XML is a refusal, never a silent OK.</invariants>
